@@ -1,0 +1,90 @@
+import Link from 'next/link';
+import { Shield, Mail, Phone } from 'lucide-react';
+
+export default function Footer() {
+  return (
+    <footer className="bg-card-background border-t border-muted">
+      <div className="max-w-[100rem] mx-auto px-8 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          {/* Brand */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                <Shield className="w-6 h-6 text-primary-foreground" />
+              </div>
+              <span className="font-heading text-xl text-primary">LIC Digital</span>
+            </div>
+            <p className="font-paragraph text-sm text-foreground">
+              आपकी बीमा पॉलिसी का डिजिटल समाधान। Your trusted digital insurance platform.
+            </p>
+          </div>
+
+          {/* Quick Links */}
+          <div>
+            <h3 className="font-heading text-lg text-card-heading mb-4">Quick Links</h3>
+            <ul className="space-y-2">
+              <li>
+                <Link href="/" className="font-paragraph text-sm text-foreground hover:text-primary">
+                  Home
+                </Link>
+              </li>
+              <li>
+                <Link href="/login" className="font-paragraph text-sm text-foreground hover:text-primary">
+                  Login
+                </Link>
+              </li>
+              <li>
+                <Link href="/register" className="font-paragraph text-sm text-foreground hover:text-primary">
+                  Register
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Dashboards */}
+          <div>
+            <h3 className="font-heading text-lg text-card-heading mb-4">Dashboards</h3>
+            <ul className="space-y-2">
+              <li>
+                <Link href="/agent-dashboard" className="font-paragraph text-sm text-foreground hover:text-primary">
+                  Agent Dashboard
+                </Link>
+              </li>
+              <li>
+                <Link href="/customer-dashboard" className="font-paragraph text-sm text-foreground hover:text-primary">
+                  Customer Dashboard
+                </Link>
+              </li>
+              <li>
+                <Link href="/do-dashboard" className="font-paragraph text-sm text-foreground hover:text-primary">
+                  DO Dashboard
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Contact */}
+          <div>
+            <h3 className="font-heading text-lg text-card-heading mb-4">Support</h3>
+            <ul className="space-y-3">
+              <li className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-primary" />
+                <span className="font-paragraph text-sm text-foreground">support@licdigital.com</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Phone className="w-4 h-4 text-primary" />
+                <span className="font-paragraph text-sm text-foreground">1800-123-4567</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="border-t border-muted mt-8 pt-8 text-center">
+          <p className="font-paragraph text-sm text-foreground">
+            © {new Date().getFullYear()} LIC Digital Platform. All rights reserved.
+          </p>
+        </div>
+      </div>
+    </footer>
+  );
+}
