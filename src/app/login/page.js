@@ -1,39 +1,45 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Shield } from 'lucide-react';
-import Features from '@/components/Features';
+import { Shield, AlertCircle, Loader2 } from 'lucide-react';
+import { useAuthContext } from '@/context/AuthContext';
 
 export default function LoginPage() {
+    const { login, isLoading: isAuthLoading } = useAuthContext();
     const router = useRouter();
     const [step, setStep] = useState('role');
     const [role, setRole] = useState(null);
-    const [credentials, setCredentials] = useState({ email: '', password: '' });
-    const [otp, setOtp] = useState('');
+    const [details, setDetails] = useState({
+        email: '',
+        password: '',
+    });
+    const [error, setError] = useState(null);
 
     const handleRoleSelect = (selectedRole) => {
         setRole(selectedRole);
         setStep('credentials');
+        setError(null);
     };
 
-    const handleCredentialsSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        setStep('otp');
-    };
+        setError(null);
 
-    const handleOtpSubmit = (e) => {
-        e.preventDefault();
-        if (role === 'agent') {
-            router.push('/agent-dashboard');
-        } else if (role === 'customer') {
-            router.push('/customer-dashboard');
-        } else if (role === 'do') {
-            router.push('/do-dashboard');
+        const result = await login(details.email, details.password, role);
+
+        if (result.success) {
+            // Use the selected role or the role returned by the server
+            const finalRole = result.user?.role || role;
+            if (finalRole === 'agent') router.push('/agent-dashboard');
+            else if (finalRole === 'customer') router.push('/customer-dashboard');
+            else router.push('/');
+        } else {
+            setError(result.error || 'Login failed. Please check your credentials.');
         }
     };
 
@@ -41,16 +47,23 @@ export default function LoginPage() {
         <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12">
             <div className="w-full max-w-md">
                 <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-2xl mb-4">
-                        <Shield className="w-8 h-8 text-primary-foreground" />
+                    <div className="inline-flex items-center justify-center w-20 h-20 bg-primary rounded-3xl mb-6 shadow-xl shadow-primary/20">
+                        <Shield className="w-10 h-10 text-primary-foreground" />
                     </div>
-                    <h1 className="font-heading text-4xl text-primary mb-2">Login</h1>
+                    <h1 className="font-heading text-4xl text-primary mb-2">Welcome Back</h1>
                     <p className="font-paragraph text-base text-foreground">
-                        लॉगिन करें। Access your dashboard
+                        लॉग इन करें। Sign in to your account
                     </p>
                 </div>
 
                 <div className="bg-card-background rounded-2xl shadow-md p-8">
+                    {error && (
+                        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 text-red-700">
+                            <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                            <p className="text-sm font-medium">{error}</p>
+                        </div>
+                    )}
+
                     {step === 'role' && (
                         <div className="space-y-4">
                             <h2 className="font-heading text-2xl text-card-heading mb-6">
@@ -58,39 +71,31 @@ export default function LoginPage() {
                             </h2>
                             <Button
                                 onClick={() => handleRoleSelect('agent')}
-                                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg py-6 font-semibold h-auto"
+                                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-full py-4 font-bold h-auto shadow-md"
                             >
                                 Agent
                             </Button>
                             <Button
                                 onClick={() => handleRoleSelect('customer')}
-                                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg py-6 font-semibold h-auto"
+                                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-full py-4 font-bold h-auto shadow-md"
                             >
                                 Customer
-                            </Button>
-                            <Button
-                                onClick={() => handleRoleSelect('do')}
-                                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg py-6 font-semibold h-auto"
-                            >
-                                District Officer
                             </Button>
                         </div>
                     )}
 
                     {step === 'credentials' && (
-                        <form onSubmit={handleCredentialsSubmit} className="space-y-6">
+                        <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="mb-4">
                                 <Button
                                     type="button"
                                     onClick={() => setStep('role')}
                                     className="text-sm text-primary hover:underline bg-transparent hover:bg-transparent p-0 h-auto font-normal"
+                                    disabled={isAuthLoading}
                                 >
-                                    ← Change Role
+                                    ← Change Role ({role})
                                 </Button>
                             </div>
-                            <h2 className="font-heading text-2xl text-card-heading mb-6">
-                                Enter Credentials
-                            </h2>
                             <div className="space-y-2">
                                 <Label htmlFor="email" className="font-paragraph text-sm text-form-label">
                                     Email Address
@@ -98,10 +103,11 @@ export default function LoginPage() {
                                 <Input
                                     id="email"
                                     type="email"
-                                    value={credentials.email}
-                                    onChange={(e) => setCredentials({ ...credentials, email: e.target.value })}
+                                    value={details.email}
+                                    onChange={(e) => setDetails({ ...details, email: e.target.value })}
                                     className="bg-input-background border-input-border focus:border-input-focus-border rounded-lg"
                                     required
+                                    disabled={isAuthLoading}
                                 />
                             </div>
                             <div className="space-y-2">
@@ -111,64 +117,27 @@ export default function LoginPage() {
                                 <Input
                                     id="password"
                                     type="password"
-                                    value={credentials.password}
-                                    onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
+                                    value={details.password}
+                                    onChange={(e) => setDetails({ ...details, password: e.target.value })}
                                     className="bg-input-background border-input-border focus:border-input-focus-border rounded-lg"
                                     required
+                                    disabled={isAuthLoading}
                                 />
                             </div>
-                            <Button
-                                type="submit"
-                                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg py-3 font-semibold h-auto"
-                            >
-                                Continue
-                            </Button>
-                        </form>
-                    )}
 
-                    {step === 'otp' && (
-                        <form onSubmit={handleOtpSubmit} className="space-y-6">
-                            <div className="mb-4">
-                                <Button
-                                    type="button"
-                                    onClick={() => setStep('credentials')}
-                                    className="text-sm text-primary hover:underline bg-transparent hover:bg-transparent p-0 h-auto font-normal"
-                                >
-                                    ← Back
-                                </Button>
-                            </div>
-                            <h2 className="font-heading text-2xl text-card-heading mb-2">
-                                Enter OTP
-                            </h2>
-                            <p className="font-paragraph text-sm text-foreground mb-6">
-                                OTP भेजा गया है। We've sent a code to {credentials.email}
-                            </p>
-                            <div className="space-y-2">
-                                <Label htmlFor="otp" className="font-paragraph text-sm text-form-label">
-                                    OTP Code
-                                </Label>
-                                <Input
-                                    id="otp"
-                                    type="text"
-                                    value={otp}
-                                    onChange={(e) => setOtp(e.target.value)}
-                                    className="bg-input-background border-input-border focus:border-input-focus-border rounded-lg text-center text-2xl tracking-widest"
-                                    maxLength={6}
-                                    placeholder="000000"
-                                    required
-                                />
-                            </div>
                             <Button
                                 type="submit"
-                                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg py-3 font-semibold h-auto"
+                                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg py-3 font-semibold h-auto flex items-center justify-center"
+                                disabled={isAuthLoading}
                             >
-                                Verify & Login
-                            </Button>
-                            <Button
-                                type="button"
-                                className="w-full bg-transparent text-primary hover:bg-muted rounded-lg py-3 font-semibold h-auto"
-                            >
-                                Resend OTP
+                                {isAuthLoading ? (
+                                    <>
+                                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                                        Signing In...
+                                    </>
+                                ) : (
+                                    'Login'
+                                )}
                             </Button>
                         </form>
                     )}
@@ -182,11 +151,6 @@ export default function LoginPage() {
                         </p>
                     </div>
                 </div>
-            </div>
-
-            {/* Features Section Integrated Below */}
-            <div className="w-full mt-24">
-                <Features />
             </div>
         </div>
     );

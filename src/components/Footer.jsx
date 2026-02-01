@@ -55,11 +55,6 @@ export default function Footer() {
                   Customer Dashboard
                 </Link>
               </li>
-              <li>
-                <Link href="/do-dashboard" className="font-paragraph text-sm text-foreground hover:text-primary">
-                  DO Dashboard
-                </Link>
-              </li>
             </ul>
           </div>
 

@@ -1,500 +1,178 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { BaseCrudService } from '@/integrations';
-import { Users, FileText, Calendar, Upload, Plus, X } from 'lucide-react';
-// Error handling for LoadingSpinner import: if it's default export
-// original was: import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { Plus, X } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { useAuth } from '@/hooks/useAuth';
+import { useCustomers } from '@/hooks/useCustomers';
+import { useToast } from '@/hooks/use-toast';
+import { DashboardStats } from '@/components/dashboard/DashboardStats';
+import { CustomerList } from '@/components/dashboard/CustomerList';
+import AddCustomerForm from '@/components/dashboard/AddCustomerForm';
 
+import { useNavigationGuard } from '@/hooks/useNavigationGuard';
+
+/**
+ * Refactored Agent Dashboard Page
+ * Uses modular components and custom hooks for better maintainability and performance.
+ */
 export default function AgentDashboardPage() {
-    const [customers, setCustomers] = useState([]);
-    const [licPlans, setLicPlans] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const router = useRouter();
+    const { authorized } = useAuth('agent');
+
+    // Prevent going back to login/home from dashboard
+    useNavigationGuard(authorized);
+
+    const { toast } = useToast();
+    const { customers, isLoading, registerCustomer, updateCustomer, deleteCustomer, downloadPDF } = useCustomers();
     const [showAddCustomer, setShowAddCustomer] = useState(false);
+    const [editingCustomer, setEditingCustomer] = useState(null);
 
-    const [customerForm, setCustomerForm] = useState({
-        fullName: '',
-        dateOfBirth: '',
-        gender: 'Male',
-        aadhaarNumber: '',
-        contactNumber: '',
-        emailAddress: '',
-        address: '',
-    });
+    const handleFormSubmit = useCallback(async (payload) => {
+        let result;
+        if (editingCustomer) {
+            result = await updateCustomer(editingCustomer._id, payload);
+        } else {
+            result = await registerCustomer(payload);
+        }
 
-    const [familyMembers, setFamilyMembers] = useState([]);
+        if (result.success) {
+            toast({
+                title: editingCustomer ? "Customer Updated" : "Customer Registered",
+                description: editingCustomer ? "Customer details updated successfully." : "New customer has been added to your records.",
+                variant: "success",
+            });
+            setShowAddCustomer(false);
+            setEditingCustomer(null);
+        } else {
+            toast({
+                title: "Operation Failed",
+                description: result.error || "Something went wrong. Please try again.",
+                variant: "destructive",
+            });
+        }
+    }, [registerCustomer, updateCustomer, editingCustomer, toast]);
 
-    const [selectedPlan, setSelectedPlan] = useState('');
-    const [premiumAmount, setPremiumAmount] = useState('');
-
-    useEffect(() => {
-        loadData();
+    const handleEditCustomer = useCallback((customer) => {
+        setEditingCustomer(customer);
+        setShowAddCustomer(true);
+        // Scroll to form
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }, []);
 
-    const loadData = async () => {
-        setIsLoading(true);
-        try {
-            const [customersResult, plansResult] = await Promise.all([
-                BaseCrudService.getAll('customers'),
-                BaseCrudService.getAll('licplans'),
-            ]);
-            setCustomers(customersResult?.items || []);
-            setLicPlans(plansResult?.items || []);
-        } catch (e) {
-            console.error("Failed to load data", e);
-        }
-        setIsLoading(false);
-    };
-
-    const handleAddFamilyMember = () => {
-        setFamilyMembers([
-            ...familyMembers,
-            {
-                fullName: '',
-                relationship: '',
-                dateOfBirth: '',
-                gender: 'Male',
-                aadhaarNumber: '',
-            },
-        ]);
-    };
-
-    const handleRemoveFamilyMember = (index) => {
-        setFamilyMembers(familyMembers.filter((_, i) => i !== index));
-    };
-
-    const handleFamilyMemberChange = (index, field, value) => {
-        const updated = [...familyMembers];
-        updated[index] = { ...updated[index], [field]: value };
-        setFamilyMembers(updated);
-    };
-
-    const handleSubmitCustomer = async (e) => {
-        e.preventDefault();
-
-        // Using randomUUID for now, normally ID is generated by backend or crypto.randomUUID()
-        const newCustomer = {
-            ...customerForm,
-            _id: crypto.randomUUID(),
-        };
-
-        // Optimistic update
-        setCustomers([newCustomer, ...customers]);
-
-        try {
-            await BaseCrudService.create('customers', newCustomer);
-
-            for (const member of familyMembers) {
-                if (member.fullName) {
-                    await BaseCrudService.create('familymembers', {
-                        ...member,
-                        _id: crypto.randomUUID(),
-                    });
-                }
-            }
-
-            if (selectedPlan && premiumAmount) {
-                const plan = licPlans.find(p => p._id === selectedPlan);
-                await BaseCrudService.create('policies', {
-                    _id: crypto.randomUUID(),
-                    policyNumber: `POL-${Date.now()}`,
-                    policyName: plan?.planName || '',
-                    premiumAmount: parseFloat(premiumAmount),
-                    dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-                    renewalStatus: 'Active',
-                });
-            }
-
-            setShowAddCustomer(false);
-            setCustomerForm({
-                fullName: '',
-                dateOfBirth: '',
-                gender: 'Male',
-                aadhaarNumber: '',
-                contactNumber: '',
-                emailAddress: '',
-                address: '',
+    const handleDeleteCustomer = useCallback(async (customerId) => {
+        const result = await deleteCustomer(customerId);
+        if (result.success) {
+            toast({
+                title: "Customer Deleted",
+                description: "The customer record has been removed.",
+                variant: "default",
             });
-            setFamilyMembers([]);
-            setSelectedPlan('');
-            setPremiumAmount('');
-            // Reload to ensure sync
-            loadData();
-        } catch (error) {
-            console.error("Error creating customer", error);
-            loadData();
+        } else {
+            toast({
+                title: "Delete Failed",
+                description: result.error || "Could not delete customer.",
+                variant: "destructive",
+            });
         }
-    };
+    }, [deleteCustomer, toast]);
 
-    const maskAadhaar = (aadhaar) => {
-        if (!aadhaar || aadhaar.length < 4) return aadhaar;
-        return 'XXXX-XXXX-' + aadhaar.slice(-4);
-    };
+    const handleViewCustomer = useCallback((customerId) => {
+        router.push(`/customer/${customerId}`);
+    }, [router]);
+
+    const handleCancelForm = useCallback(() => {
+        setShowAddCustomer(false);
+        setEditingCustomer(null);
+    }, []);
+
+    const handleDownloadPDF = useCallback(async (customerId, customerName) => {
+        const result = await downloadPDF(customerId, customerName);
+        if (!result.success) {
+            toast({
+                title: "Download Failed",
+                description: result.error || "Could not download PDF. Please try again.",
+                variant: "destructive",
+            });
+        }
+    }, [downloadPDF, toast]);
+
+    if (!authorized) {
+        return (
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <LoadingSpinner />
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-background flex flex-col">
             <Header />
 
             <main className="flex-1">
-                <section className="bg-primary text-primary-foreground py-12">
-                    <div className="max-w-[100rem] mx-auto px-8">
-                        <h1 className="font-heading text-4xl mb-2">Agent Dashboard</h1>
-                        <p className="font-paragraph text-lg opacity-90">
-                            एजेंट डैशबोर्ड। Manage customers and policies
+                <section className="bg-primary text-primary-foreground py-16 shadow-inner relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                    <div className="max-w-[100rem] mx-auto px-8 relative z-10">
+                        <h1 className="font-heading text-5xl font-bold mb-3 tracking-tight">Agent Dashboard</h1>
+                        <p className="font-paragraph text-xl opacity-80 max-w-2xl">
+                            एजेंट डैशबोर्ड। Manage your customers and policies in one secure place.
                         </p>
                     </div>
                 </section>
 
                 <section className="max-w-[100rem] mx-auto px-8 py-12">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-                        <div className="bg-card-background rounded-2xl shadow-md p-6">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                                    <Users className="w-6 h-6 text-primary" />
-                                </div>
-                                <div>
-                                    <p className="font-paragraph text-sm text-foreground">Total Customers</p>
-                                    <p className="font-heading text-3xl text-card-heading">{customers.length}</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="bg-card-background rounded-2xl shadow-md p-6">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-secondary/10 rounded-lg flex items-center justify-center">
-                                    <FileText className="w-6 h-6 text-secondary-foreground" />
-                                </div>
-                                <div>
-                                    <p className="font-paragraph text-sm text-foreground">Active Plans</p>
-                                    <p className="font-heading text-3xl text-card-heading">{licPlans.length}</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="bg-card-background rounded-2xl shadow-md p-6">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                                    <Calendar className="w-6 h-6 text-primary" />
-                                </div>
-                                <div>
-                                    <p className="font-paragraph text-sm text-foreground">Renewals</p>
-                                    <p className="font-heading text-3xl text-card-heading">
-                                        <Link href="/renewals" className="hover:underline">View</Link>
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    {/* Stats Section */}
+                    <DashboardStats
+                        customerCount={customers.length}
+                        planCount={0}
+                    />
 
-                    <div className="mb-8">
+                    <div className="mb-10 flex gap-4">
                         <Button
-                            onClick={() => setShowAddCustomer(!showAddCustomer)}
-                            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg px-6 py-3 font-semibold h-auto"
+                            onClick={() => {
+                                if (showAddCustomer) {
+                                    handleCancelForm();
+                                } else {
+                                    setShowAddCustomer(true);
+                                }
+                            }}
+                            className={`${showAddCustomer ? 'bg-muted text-muted-foreground' : 'bg-primary text-primary-foreground'} hover:opacity-90 rounded-full px-8 py-4 font-bold text-lg h-auto shadow-lg transition-all hover:scale-105`}
                         >
-                            <Plus className="w-5 h-5 mr-2" />
+                            {showAddCustomer ? <X className="w-6 h-6 mr-2" /> : <Plus className="w-6 h-6 mr-2" />}
                             {showAddCustomer ? 'Cancel' : 'Add New Customer'}
                         </Button>
                     </div>
 
+                    {/* Conditional Registration Form */}
                     {showAddCustomer && (
-                        <div className="bg-card-background rounded-2xl shadow-md p-8 mb-12">
-                            <h2 className="font-heading text-2xl text-card-heading mb-6">Add New Customer</h2>
-                            <form onSubmit={handleSubmitCustomer} className="space-y-8">
-                                <div>
-                                    <h3 className="font-heading text-xl text-card-heading mb-4">Customer Details</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="fullName" className="font-paragraph text-sm text-form-label">
-                                                Full Name *
-                                            </Label>
-                                            <Input
-                                                id="fullName"
-                                                value={customerForm.fullName}
-                                                onChange={(e) => setCustomerForm({ ...customerForm, fullName: e.target.value })}
-                                                className="bg-input-background border-input-border focus:border-input-focus-border rounded-lg"
-                                                required
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="dateOfBirth" className="font-paragraph text-sm text-form-label">
-                                                Date of Birth *
-                                            </Label>
-                                            <Input
-                                                id="dateOfBirth"
-                                                type="date"
-                                                value={customerForm.dateOfBirth}
-                                                onChange={(e) => setCustomerForm({ ...customerForm, dateOfBirth: e.target.value })}
-                                                className="bg-input-background border-input-border focus:border-input-focus-border rounded-lg"
-                                                required
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="gender" className="font-paragraph text-sm text-form-label">
-                                                Gender *
-                                            </Label>
-                                            <select
-                                                id="gender"
-                                                value={customerForm.gender}
-                                                onChange={(e) => setCustomerForm({ ...customerForm, gender: e.target.value })}
-                                                className="w-full bg-input-background border border-input-border focus:border-input-focus-border rounded-lg px-3 py-2 font-paragraph text-base"
-                                                required
-                                            >
-                                                <option value="Male">Male</option>
-                                                <option value="Female">Female</option>
-                                                <option value="Other">Other</option>
-                                            </select>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="aadhaarNumber" className="font-paragraph text-sm text-form-label">
-                                                Aadhaar Number *
-                                            </Label>
-                                            <Input
-                                                id="aadhaarNumber"
-                                                value={customerForm.aadhaarNumber}
-                                                onChange={(e) => setCustomerForm({ ...customerForm, aadhaarNumber: e.target.value })}
-                                                className="bg-input-background border-input-border focus:border-input-focus-border rounded-lg"
-                                                maxLength={12}
-                                                required
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="contactNumber" className="font-paragraph text-sm text-form-label">
-                                                Contact Number *
-                                            </Label>
-                                            <Input
-                                                id="contactNumber"
-                                                type="tel"
-                                                value={customerForm.contactNumber}
-                                                onChange={(e) => setCustomerForm({ ...customerForm, contactNumber: e.target.value })}
-                                                className="bg-input-background border-input-border focus:border-input-focus-border rounded-lg"
-                                                required
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="emailAddress" className="font-paragraph text-sm text-form-label">
-                                                Email Address *
-                                            </Label>
-                                            <Input
-                                                id="emailAddress"
-                                                type="email"
-                                                value={customerForm.emailAddress}
-                                                onChange={(e) => setCustomerForm({ ...customerForm, emailAddress: e.target.value })}
-                                                className="bg-input-background border-input-border focus:border-input-focus-border rounded-lg"
-                                                required
-                                            />
-                                        </div>
-                                        <div className="space-y-2 md:col-span-2">
-                                            <Label htmlFor="address" className="font-paragraph text-sm text-form-label">
-                                                Address *
-                                            </Label>
-                                            <Input
-                                                id="address"
-                                                value={customerForm.address}
-                                                onChange={(e) => setCustomerForm({ ...customerForm, address: e.target.value })}
-                                                className="bg-input-background border-input-border focus:border-input-focus-border rounded-lg"
-                                                required
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h3 className="font-heading text-xl text-card-heading">Family Members</h3>
-                                        <Button
-                                            type="button"
-                                            onClick={handleAddFamilyMember}
-                                            className="bg-secondary text-secondary-foreground hover:bg-secondary/90 rounded-lg px-4 py-2 font-semibold h-auto"
-                                        >
-                                            <Plus className="w-4 h-4 mr-2" />
-                                            Add Member
-                                        </Button>
-                                    </div>
-                                    {familyMembers.map((member, index) => (
-                                        <div key={index} className="bg-upload-area-background border border-upload-area-border rounded-lg p-6 mb-4">
-                                            <div className="flex justify-between items-center mb-4">
-                                                <h4 className="font-paragraph text-base text-form-label font-semibold">
-                                                    Member {index + 1}
-                                                </h4>
-                                                <Button
-                                                    type="button"
-                                                    onClick={() => handleRemoveFamilyMember(index)}
-                                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-lg px-3 py-1 h-auto"
-                                                >
-                                                    <X className="w-4 h-4" />
-                                                </Button>
-                                            </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <Label className="font-paragraph text-sm text-form-label">Full Name</Label>
-                                                    <Input
-                                                        value={member.fullName}
-                                                        onChange={(e) => handleFamilyMemberChange(index, 'fullName', e.target.value)}
-                                                        className="bg-input-background border-input-border focus:border-input-focus-border rounded-lg"
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label className="font-paragraph text-sm text-form-label">Relationship</Label>
-                                                    <Input
-                                                        value={member.relationship}
-                                                        onChange={(e) => handleFamilyMemberChange(index, 'relationship', e.target.value)}
-                                                        className="bg-input-background border-input-border focus:border-input-focus-border rounded-lg"
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label className="font-paragraph text-sm text-form-label">Date of Birth</Label>
-                                                    <Input
-                                                        type="date"
-                                                        value={member.dateOfBirth}
-                                                        onChange={(e) => handleFamilyMemberChange(index, 'dateOfBirth', e.target.value)}
-                                                        className="bg-input-background border-input-border focus:border-input-focus-border rounded-lg"
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label className="font-paragraph text-sm text-form-label">Gender</Label>
-                                                    <select
-                                                        value={member.gender}
-                                                        onChange={(e) => handleFamilyMemberChange(index, 'gender', e.target.value)}
-                                                        className="w-full bg-input-background border border-input-border focus:border-input-focus-border rounded-lg px-3 py-2 font-paragraph text-base"
-                                                    >
-                                                        <option value="Male">Male</option>
-                                                        <option value="Female">Female</option>
-                                                        <option value="Other">Other</option>
-                                                    </select>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label className="font-paragraph text-sm text-form-label">Aadhaar Number</Label>
-                                                    <Input
-                                                        value={member.aadhaarNumber}
-                                                        onChange={(e) => handleFamilyMemberChange(index, 'aadhaarNumber', e.target.value)}
-                                                        className="bg-input-background border-input-border focus:border-input-focus-border rounded-lg"
-                                                        maxLength={12}
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label className="font-paragraph text-sm text-form-label">Upload Photo</Label>
-                                                    <div className="bg-upload-area-background border-2 border-dashed border-upload-area-border rounded-lg p-4 text-center">
-                                                        <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                                                        <p className="font-paragraph text-sm text-muted-foreground">Click to upload</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <div>
-                                    <h3 className="font-heading text-xl text-card-heading mb-4">Select LIC Plan</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="licPlan" className="font-paragraph text-sm text-form-label">
-                                                LIC Plan
-                                            </Label>
-                                            <select
-                                                id="licPlan"
-                                                value={selectedPlan}
-                                                onChange={(e) => setSelectedPlan(e.target.value)}
-                                                className="w-full bg-input-background border border-input-border focus:border-input-focus-border rounded-lg px-3 py-2 font-paragraph text-base"
-                                            >
-                                                <option value="">Select a plan</option>
-                                                {licPlans.map((plan) => (
-                                                    <option key={plan._id} value={plan._id}>
-                                                        {plan.planName} ({plan.planCode})
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="premiumAmount" className="font-paragraph text-sm text-form-label">
-                                                Premium Amount (₹)
-                                            </Label>
-                                            <Input
-                                                id="premiumAmount"
-                                                type="number"
-                                                value={premiumAmount}
-                                                onChange={(e) => setPremiumAmount(e.target.value)}
-                                                className="bg-input-background border-input-border focus:border-input-focus-border rounded-lg"
-                                                placeholder="Enter amount"
-                                            />
-                                        </div>
-                                    </div>
-                                    {selectedPlan && premiumAmount && (
-                                        <div className="mt-6 bg-primary/10 rounded-lg p-6">
-                                            <h4 className="font-heading text-lg text-card-heading mb-2">Premium Summary</h4>
-                                            <p className="font-paragraph text-base text-foreground">
-                                                Plan: {licPlans.find(p => p._id === selectedPlan)?.planName}
-                                            </p>
-                                            <p className="font-heading text-2xl text-primary mt-2">₹{premiumAmount}</p>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="flex gap-4">
-                                    <Button
-                                        type="submit"
-                                        className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg px-6 py-3 font-semibold h-auto"
-                                    >
-                                        Submit Customer
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        onClick={() => setShowAddCustomer(false)}
-                                        className="bg-muted text-muted-foreground hover:bg-muted/90 rounded-lg px-6 py-3 font-semibold h-auto"
-                                    >
-                                        Cancel
-                                    </Button>
-                                </div>
-                            </form>
-                        </div>
+                        <AddCustomerForm
+                            onSubmit={handleFormSubmit}
+                            onCancel={handleCancelForm}
+                            isProcessing={isLoading}
+                            initialData={editingCustomer?.rawData}
+                        />
                     )}
 
+                    {/* Customer Records Section */}
                     <div className="bg-card-background rounded-2xl shadow-md p-8">
-                        <h2 className="font-heading text-2xl text-card-heading mb-6">Customer List</h2>
-                        <div className="min-h-[400px]">
-                            {isLoading ? (
-                                <div className="flex justify-center items-center h-48">
-                                    <LoadingSpinner />
-                                </div>
-                            ) : customers.length > 0 ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {customers.map((customer) => (
-                                        <Link
-                                            key={customer._id}
-                                            href={`/customer/${customer._id}`}
-                                            className="bg-upload-area-background border border-upload-area-border rounded-lg p-6 hover:border-primary transition-colors"
-                                        >
-                                            <h3 className="font-heading text-lg text-card-heading mb-2">
-                                                {customer.fullName}
-                                            </h3>
-                                            <p className="font-paragraph text-sm text-foreground mb-1">
-                                                {customer.emailAddress}
-                                            </p>
-                                            <p className="font-paragraph text-sm text-foreground mb-1">
-                                                {customer.contactNumber}
-                                            </p>
-                                            <p className="font-paragraph text-sm text-muted-foreground">
-                                                Aadhaar: {maskAadhaar(customer.aadhaarNumber || '')}
-                                            </p>
-                                        </Link>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="text-center py-12">
-                                    <Users className="w-16 h-16 text-muted mx-auto mb-4" />
-                                    <h3 className="font-heading text-xl text-card-heading mb-2">
-                                        No Customers Yet
-                                    </h3>
-                                    <p className="font-paragraph text-base text-foreground">
-                                        ग्राहक जोड़ें। Add your first customer to get started
-                                    </p>
-                                </div>
-                            )}
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="font-heading text-2xl text-card-heading">My Customers</h2>
+                            <div className="text-sm font-medium text-muted-foreground bg-muted/20 px-4 py-2 rounded-full">
+                                {customers.length} Total Records
+                            </div>
                         </div>
+                        <CustomerList
+                            customers={customers}
+                            isLoading={isLoading}
+                            onEdit={handleEditCustomer}
+                            onDelete={handleDeleteCustomer}
+                            onView={handleViewCustomer}
+                            onDownload={handleDownloadPDF}
+                        />
                     </div>
                 </section>
             </main>

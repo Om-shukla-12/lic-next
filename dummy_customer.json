@@ -1,0 +1,42 @@
+{
+    "customer": {
+        "customer_name": "Antigravity Test",
+        "father_name": "AI Father",
+        "mother_name": "AI Mother",
+        "spouse_name": "AI Spouse",
+        "dob": "1990-01-01",
+        "address": "123 Virtual St",
+        "village": "Silicon Valley",
+        "pincode": "940432",
+        "mobile_number": "1234567890",
+        "email": "test@example.com",
+        "aadhaar_number": "999988887777",
+        "pan_number": "ABCDE1234567"
+    },
+    "nominee": {
+        "nominee_name": "AI Nominee",
+        "relation": "Friend",
+        "age": 25,
+        "pan_number": "ABCDE1234F"
+    },
+    "job_business": {
+        "type": "AI Service",
+        "address": "Cloud",
+        "annual_income": 1000000
+    },
+    "medical": {
+        "height": 180,
+        "weight": 75
+    },
+    "family_members": [],
+    "policy": {
+        "insurance_rate": 8.5,
+        "insurance_number": "LIC-TEST-002",
+        "premium_year": 20,
+        "maturity_date": "2040-01-01",
+        "installment_type": "Monthly",
+        "installment_price": 5000,
+        "birth_place": "Internet"
+    },
+    "existing_family_policies": []
+}

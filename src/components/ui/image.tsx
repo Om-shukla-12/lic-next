@@ -113,17 +113,21 @@ const WixImage = forwardRef<HTMLImageElement, WixImageProps>(
     const imgProps = { ...props } as ImgHTMLAttributes<HTMLImageElement>
     // Add src (and other props if needed)to the img props
     if (size) {
-      const scale = fittingType === 'fit' ? sdk.getScaleToFitImageURL : sdk.getScaleToFillImageURL
-      const targetHeight = size.height || height * (size.width / width) || height
-      const targetWidth = size.width || width * (size.height / height) || width
-      const transformOptions: ImageTransformOptions = focalPoint ? { focalPoint } : undefined
-      imgProps.src = scale(data.id, data.width, data.height, targetWidth, targetHeight, transformOptions)
+      // const scale = fittingType === 'fit' ? sdk.getScaleToFitImageURL : sdk.getScaleToFillImageURL
+      // const targetHeight = Math.floor((size.height as any) || (height as any) * ((size.width as any) / (width as any)) || (height as any))
+      // const targetWidth = Math.floor((size.width as any) || (width as any) * ((size.height as any) / (height as any)) || (width as any))
+      // const transformOptions: ImageTransformOptions | undefined = focalPoint ? { focalPoint } as any : undefined
+      // @ts-ignore
+      // imgProps.src = (scale as any)(data.id, data.width, data.height, targetWidth, targetHeight, transformOptions)
+      imgProps.src = FALLBACK_IMAGE_URL;
     } else {
       // Use a small thumbnail as placeholder until we have the actual size
-      const { uri, ...placeholder } = getPlaceholder(fittingType ?? 'fit', data, { htmlTag: 'img' })
-      imgProps.style = placeholder.css.img as React.CSSProperties
-      imgProps.src = `${STATIC_MEDIA_URL}${uri}`
-      imgProps['data-placeholder-image'] = true
+      const placeholder = getPlaceholder(fittingType ?? 'fit', data, { htmlTag: 'img' })
+      if (placeholder?.css?.img) {
+        imgProps.style = placeholder.css.img as React.CSSProperties
+      }
+      imgProps.src = `${STATIC_MEDIA_URL}${placeholder.uri}`
+      imgProps['data-placeholder-image' as keyof ImgHTMLAttributes<HTMLImageElement>] = true as any
     }
 
     return (
@@ -141,25 +145,20 @@ WixImage.displayName = 'WixImage'
 
 export const Image = forwardRef<HTMLImageElement, ImageProps>(
   ({ src, fittingType, originWidth, originHeight, focalPointX, focalPointY, ...props }, ref) => {
-    const [imgSrc, setImgSrc] = useState<string | undefined>(src)
+    const [imgSrc, setImgSrc] = useState<string | undefined>(src as string | undefined)
     const additionalImgProps = { fittingType, originWidth, originHeight, focalPointX, focalPointY }
 
     useEffect(() => {
       // If src prop changes, update the imgSrc state
-      setImgSrc(prev => {
-        if (prev !== src) {
-          return src
-        }
-        return prev
-      })
+      setImgSrc(src as any)
     }, [src])
 
     if (!src) {
-      return <div data-empty-image ref={ref} {...props} />
+      return <div data-empty-image ref={ref as any} {...props} />
     }
 
     const imageProps = { ...props, onError: () => setImgSrc(FALLBACK_IMAGE_URL) }
-    const imageData = getImageData(imgSrc, additionalImgProps)
+    const imageData = getImageData(imgSrc as any, additionalImgProps)
 
     if (!imageData) {
       const isErrorUrl = imgSrc === FALLBACK_IMAGE_URL

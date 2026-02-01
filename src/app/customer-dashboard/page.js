@@ -1,32 +1,52 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { BaseCrudService } from '@/integrations';
 import { FileText, Calendar, DollarSign, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { useAuthContext } from '@/context/AuthContext';
+import { apiService } from '@/lib/api-service';
+
+import { useNavigationGuard } from '@/hooks/useNavigationGuard';
 
 export default function CustomerDashboardPage() {
+    const { user, token, isAuthenticated, isLoading: isAuthLoading } = useAuthContext();
+
     const [policies, setPolicies] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isDataLoading, setIsDataLoading] = useState(true);
+
+    const loadData = useCallback(async () => {
+        if (!token) return;
+        setIsDataLoading(true);
+        try {
+            const apiRecords = await apiService.getMyRecords(token);
+
+            if (apiRecords && apiRecords.length > 0) {
+                const mappedPolicies = apiRecords.map((record, index) => ({
+                    _id: record._id || `api-policy-${index}`,
+                    policyNumber: record.policy?.insurance_number || 'N/A',
+                    policyName: (record.policy?.installment_type || '') + " " + (record.policy?.insurance_number || ''),
+                    premiumAmount: record.policy?.installment_price || 0,
+                    renewalStatus: 'Active',
+                    dueDate: record.policy?.maturity_date
+                }));
+                setPolicies(mappedPolicies);
+            } else {
+                setPolicies([]);
+            }
+        } catch (e) {
+            console.error("Failed to load customer data", e);
+        } finally {
+            setIsDataLoading(false);
+        }
+    }, [token]);
 
     useEffect(() => {
         loadData();
-    }, []);
-
-    const loadData = async () => {
-        setIsLoading(true);
-        try {
-            const result = await BaseCrudService.getAll('policies');
-            setPolicies(result?.items || []);
-        } catch (e) {
-            console.error("Failed to load policies", e);
-        }
-        setIsLoading(false);
-    };
+    }, [loadData]);
 
     const getStatusColor = (status) => {
         switch (status) {
@@ -54,58 +74,77 @@ export default function CustomerDashboardPage() {
     const activePolicies = policies.filter(p => p.renewalStatus === 'Active').length;
     const upcomingRenewals = policies.filter(p => {
         if (!p.dueDate) return false;
-        const dueDate = new Date(p.dueDate);
-        const today = new Date();
-        const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-        return diffDays > 0 && diffDays <= 30;
+        try {
+            const dueDate = new Date(p.dueDate);
+            const today = new Date();
+            const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+            return diffDays > 0 && diffDays <= 30;
+        } catch {
+            return false;
+        }
     }).length;
+
+    const isLoading = isAuthLoading || isDataLoading;
+    const authorized = isAuthenticated && user?.role === 'customer';
+
+    // Prevent going back to login/home from dashboard
+    useNavigationGuard(authorized);
+
+    if (!authorized) {
+        return (
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                {isAuthLoading ? <LoadingSpinner /> : <p>Redirecting...</p>}
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-background flex flex-col">
             <Header />
 
             <main className="flex-1">
-                <section className="bg-primary text-primary-foreground py-12">
-                    <div className="max-w-[100rem] mx-auto px-8">
-                        <h1 className="font-heading text-4xl mb-2">Customer Dashboard</h1>
-                        <p className="font-paragraph text-lg opacity-90">
-                            ग्राहक डैशबोर्ड। View your policies and renewals
+                <section className="bg-primary text-primary-foreground py-16 shadow-inner relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                    <div className="max-w-[100rem] mx-auto px-8 relative z-10">
+                        <h1 className="font-heading text-5xl font-bold mb-3 tracking-tight">Customer Dashboard</h1>
+                        <p className="font-paragraph text-xl opacity-80 max-w-2xl">
+                            ग्राहक डैशबोर्ड। Your policies and renewals at a glance.
                         </p>
                     </div>
                 </section>
 
                 <section className="max-w-[100rem] mx-auto px-8 py-12">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-                        <div className="bg-card-background rounded-2xl shadow-md p-6">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                                    <FileText className="w-6 h-6 text-primary" />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                        <div className="bg-card rounded-2xl shadow-premium p-8 border border-muted/20 transition-all hover:scale-[1.02]">
+                            <div className="flex items-center gap-6">
+                                <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center shadow-inner">
+                                    <FileText className="w-8 h-8 text-primary" />
                                 </div>
-                                <div>
-                                    <p className="font-paragraph text-sm text-foreground">Active Policies</p>
-                                    <p className="font-heading text-3xl text-card-heading">{activePolicies}</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="bg-card-background rounded-2xl shadow-md p-6">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-secondary/10 rounded-lg flex items-center justify-center">
-                                    <DollarSign className="w-6 h-6 text-secondary-foreground" />
-                                </div>
-                                <div>
-                                    <p className="font-paragraph text-sm text-foreground">Total Premium</p>
-                                    <p className="font-heading text-3xl text-card-heading">₹{totalPremium.toLocaleString()}</p>
+                                <div className="space-y-1">
+                                    <p className="font-paragraph text-xs font-bold uppercase tracking-wider text-muted-foreground">Active Policies</p>
+                                    <p className="font-heading text-4xl font-black text-primary">{activePolicies}</p>
                                 </div>
                             </div>
                         </div>
-                        <div className="bg-card-background rounded-2xl shadow-md p-6">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                                    <Calendar className="w-6 h-6 text-primary" />
+                        <div className="bg-card rounded-2xl shadow-premium p-8 border border-muted/20 transition-all hover:scale-[1.02]">
+                            <div className="flex items-center gap-6">
+                                <div className="w-16 h-16 bg-secondary/10 rounded-2xl flex items-center justify-center shadow-inner">
+                                    <DollarSign className="w-8 h-8 text-secondary-foreground" />
                                 </div>
-                                <div>
-                                    <p className="font-paragraph text-sm text-foreground">Upcoming Renewals</p>
-                                    <p className="font-heading text-3xl text-card-heading">{upcomingRenewals}</p>
+                                <div className="space-y-1">
+                                    <p className="font-paragraph text-xs font-bold uppercase tracking-wider text-muted-foreground">Total Premium</p>
+                                    <p className="font-heading text-4xl font-black text-secondary-foreground">₹{totalPremium.toLocaleString()}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="bg-card rounded-2xl shadow-premium p-8 border border-muted/20 transition-all hover:scale-[1.02]">
+                            <div className="flex items-center gap-6">
+                                <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center shadow-inner">
+                                    <Calendar className="w-8 h-8 text-primary" />
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="font-paragraph text-xs font-bold uppercase tracking-wider text-muted-foreground">Upcoming Renewals</p>
+                                    <p className="font-heading text-4xl font-black text-primary">{upcomingRenewals}</p>
                                 </div>
                             </div>
                         </div>
@@ -134,7 +173,7 @@ export default function CustomerDashboardPage() {
                     <div className="bg-card-background rounded-2xl shadow-md p-8">
                         <h2 className="font-heading text-2xl text-card-heading mb-6">Your Policies</h2>
                         <div className="min-h-[400px]">
-                            {isLoading ? (
+                            {isDataLoading ? (
                                 <div className="flex justify-center items-center h-48">
                                     <LoadingSpinner />
                                 </div>

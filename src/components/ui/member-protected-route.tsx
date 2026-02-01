@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
-import { useMember } from '@/integrations';
+// import { useMember } from '@/integrations';
+const useMember = () => ({ isAuthenticated: false, isLoading: false });
 import { SignIn } from '@/components/ui/sign-in';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 

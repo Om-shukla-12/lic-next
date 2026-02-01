@@ -1,6 +1,8 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useMember } from '@/integrations';
+
+// import { useMember } from '@/integrations';
+const useMember = () => ({ actions: { login: () => { } } });
 
 interface SignInProps {
   title?: string;
