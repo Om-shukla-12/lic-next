@@ -75,12 +75,12 @@ export default function LoginPage() {
                             >
                                 Agent
                             </Button>
-                            <Button
+                            {/* <Button
                                 onClick={() => handleRoleSelect('customer')}
                                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-full py-4 font-bold h-auto shadow-md"
                             >
                                 Customer
-                            </Button>
+                            </Button> */}
                         </div>
                     )}
 
