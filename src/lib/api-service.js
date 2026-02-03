@@ -60,15 +60,6 @@ export const apiService = {
         return this.handleResponse(response);
     },
 
-    /**
-     * Customer CRUD APIs
-     */
-    async getAllRecords(token) {
-        const response = await fetch(`${API_BASE_URL}/forms/all-records`, {
-            headers: this.getHeaders(token),
-        });
-        return this.handleResponse(response);
-    },
 
     async getMyRecords(token) {
         const response = await fetch(`${API_BASE_URL}/forms/my-records`, {
@@ -136,5 +127,19 @@ export const apiService = {
         }
 
         return response.blob();
+    },
+
+    /**
+     * Check if mobile number exists in agent's records
+     */
+    async checkMobileAvailability(mobileNumber, token) {
+        try {
+            const myRecords = await this.getMyRecords(token);
+            const exists = (myRecords || []).some(record => record.customer?.mobile_number === mobileNumber);
+            return { exists };
+        } catch (error) {
+            console.error("Error checking mobile availability:", error);
+            return { exists: false, error: 'Could not verify number' };
+        }
     }
 };

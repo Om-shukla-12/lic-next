@@ -15,7 +15,7 @@ export const OccupationMedicalSection = ({ jobForm, medicalForm, errors, onJobCh
             <div className="p-4 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <Label htmlFor="job_type" className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Job Type *</Label>
+                        <Label htmlFor="job_type" className="text-xs font-bold text-slate-500 uppercase tracking-wider">Job Type *</Label>
                         <select
                             id="job_type"
                             value={jobForm.type}
@@ -28,49 +28,49 @@ export const OccupationMedicalSection = ({ jobForm, medicalForm, errors, onJobCh
                         </select>
                     </div>
                     <div className="space-y-1.5">
-                        <Label htmlFor="annual_income" className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Income *</Label>
+                        <Label htmlFor="annual_income" className="text-xs font-bold text-slate-500 uppercase tracking-wider">Income *</Label>
                         <Input
                             id="annual_income"
                             type="number"
                             value={jobForm.annual_income}
                             onChange={(e) => onJobChange('annual_income', e.target.value)}
-                            className={`h-11 rounded-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all ${errors.annual_income ? 'border-destructive' : ''}`}
+                            className={`h-11 rounded-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all ${errors.annual_income ? 'border-destructive/60 bg-destructive/5' : ''}`}
                         />
-                        {errors.annual_income && <p className="text-destructive text-[11px] font-medium mt-1">{errors.annual_income}</p>}
+                        {errors.annual_income && <p className="text-destructive text-xs font-semibold mt-1 flex items-center gap-1">● {errors.annual_income}</p>}
                     </div>
                 </div>
                 <div className="space-y-1.5">
-                    <Label htmlFor="job_address" className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Work Address *</Label>
+                    <Label htmlFor="job_address" className="text-xs font-bold text-slate-500 uppercase tracking-wider">Work Address *</Label>
                     <Input
                         id="job_address"
                         value={jobForm.address}
                         onChange={(e) => onJobChange('address', e.target.value)}
-                        className={`h-11 rounded-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all ${errors.job_address ? 'border-destructive' : ''}`}
+                        className={`h-11 rounded-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all ${errors.job_address ? 'border-destructive/60 bg-destructive/5' : ''}`}
                     />
-                    {errors.job_address && <p className="text-destructive text-[11px] font-medium mt-1">{errors.job_address}</p>}
+                    {errors.job_address && <p className="text-destructive text-xs font-semibold mt-1 flex items-center gap-1">● {errors.job_address}</p>}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <Label htmlFor="height" className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Height (cm) *</Label>
+                        <Label htmlFor="height" className="text-xs font-bold text-slate-500 uppercase tracking-wider">Height (cm) *</Label>
                         <Input
                             id="height"
                             type="number"
                             value={medicalForm.height}
                             onChange={(e) => onMedicalChange('height', e.target.value)}
-                            className={`h-11 rounded-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all ${errors.height ? 'border-destructive' : ''}`}
+                            className={`h-11 rounded-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all ${errors.height ? 'border-destructive/60 bg-destructive/5' : ''}`}
                         />
-                        {errors.height && <p className="text-destructive text-[11px] font-medium mt-1">{errors.height}</p>}
+                        {errors.height && <p className="text-destructive text-xs font-semibold mt-1 flex items-center gap-1">● {errors.height}</p>}
                     </div>
                     <div className="space-y-1.5">
-                        <Label htmlFor="weight" className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Weight (kg) *</Label>
+                        <Label htmlFor="weight" className="text-xs font-bold text-slate-500 uppercase tracking-wider">Weight (kg) *</Label>
                         <Input
                             id="weight"
                             type="number"
                             value={medicalForm.weight}
                             onChange={(e) => onMedicalChange('weight', e.target.value)}
-                            className={`h-11 rounded-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all ${errors.weight ? 'border-destructive' : ''}`}
+                            className={`h-11 rounded-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all ${errors.weight ? 'border-destructive/60 bg-destructive/5' : ''}`}
                         />
-                        {errors.weight && <p className="text-destructive text-[11px] font-medium mt-1">{errors.weight}</p>}
+                        {errors.weight && <p className="text-destructive text-xs font-semibold mt-1 flex items-center gap-1">● {errors.weight}</p>}
                     </div>
                 </div>
             </div>

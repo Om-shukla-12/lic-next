@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Upload, X, Camera, Image as ImageIcon, User } from 'lucide-react';
 
-export const PersonalDetailsSection = ({ form, errors, onChange, onFileChange, onRemovePhoto }) => {
+export const PersonalDetailsSection = ({ form, errors, onChange, onFileChange, onRemovePhoto, onMobileBlur, isCheckingMobile }) => {
     return (
         <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
             {/* Form Header */}
@@ -67,106 +67,110 @@ export const PersonalDetailsSection = ({ form, errors, onChange, onFileChange, o
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Row 1 */}
                     <div className="space-y-1.5">
-                        <Label htmlFor="customer_name" className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Full Name *</Label>
+                        <Label htmlFor="customer_name" className="text-xs font-bold text-slate-500 uppercase tracking-wider">Full Name *</Label>
                         <Input
                             id="customer_name"
                             placeholder="As per Aadhaar"
                             value={form.customer_name}
                             onChange={(e) => onChange('customer_name', e.target.value)}
-                            className={`h-11 rounded-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all ${errors.customer_name ? 'border-destructive' : ''}`}
+                            className={`h-11 rounded-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all ${errors.customer_name ? 'border-destructive/60 bg-destructive/5' : ''}`}
                         />
-                        {errors.customer_name && <p className="text-destructive text-[11px] font-medium mt-1">{errors.customer_name}</p>}
+                        {errors.customer_name && <p className="text-destructive text-xs font-semibold mt-1 flex items-center gap-1">● {errors.customer_name}</p>}
                     </div>
 
                     <div className="space-y-1.5">
-                        <Label htmlFor="dob" className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Date of Birth *</Label>
+                        <Label htmlFor="dob" className="text-xs font-bold text-slate-500 uppercase tracking-wider">Date of Birth *</Label>
                         <Input
                             id="dob"
                             type="date"
                             placeholder="mm/dd/yyyy"
                             value={form.dob}
                             onChange={(e) => onChange('dob', e.target.value)}
-                            className={`h-11 rounded-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all ${errors.dob ? 'border-destructive' : ''}`}
+                            className={`h-11 rounded-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all ${errors.dob ? 'border-destructive/60 bg-destructive/5' : ''}`}
                         />
-                        {errors.dob && <p className="text-destructive text-[11px] font-medium mt-1">{errors.dob}</p>}
+                        {errors.dob && <p className="text-destructive text-xs font-semibold mt-1 flex items-center gap-1">● {errors.dob}</p>}
                     </div>
 
                     <div className="space-y-1.5">
-                        <Label htmlFor="mobile_number" className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Mobile *</Label>
+                        <Label htmlFor="mobile_number" className="text-xs font-bold text-slate-500 uppercase tracking-wider">Mobile *</Label>
                         <Input
                             id="mobile_number"
                             type="tel"
                             placeholder="9876543210"
                             value={form.mobile_number}
                             onChange={(e) => onChange('mobile_number', e.target.value)}
-                            className={`h-11 rounded-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all ${errors.mobile_number ? 'border-destructive' : ''}`}
+                            onBlur={onMobileBlur}
+                            className={`h-11 rounded-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all ${errors.mobile_number ? 'border-destructive/60 bg-destructive/5' : ''}`}
+                            maxLength={10}
                         />
-                        {errors.mobile_number && <p className="text-destructive text-[11px] font-medium mt-1">{errors.mobile_number}</p>}
+                        {isCheckingMobile && <p className="text-blue-500 text-[10px] italic flex items-center gap-1"><span className="w-2 h-2 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></span> Checking availability...</p>}
+                        {errors.mobile_number && <p className="text-destructive text-xs font-semibold mt-1 flex items-center gap-1">● {errors.mobile_number}</p>}
                     </div>
 
                     {/* Row 2 */}
                     <div className="space-y-1.5">
-                        <Label htmlFor="father_name" className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Father's Name *</Label>
+                        <Label htmlFor="father_name" className="text-xs font-bold text-slate-500 uppercase tracking-wider">Father's Name *</Label>
                         <Input
                             id="father_name"
                             value={form.father_name}
                             onChange={(e) => onChange('father_name', e.target.value)}
-                            className={`h-11 rounded-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all ${errors.father_name ? 'border-destructive' : ''}`}
+                            className={`h-11 rounded-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all ${errors.father_name ? 'border-destructive/60 bg-destructive/5' : ''}`}
                         />
-                        {errors.father_name && <p className="text-destructive text-[11px] font-medium mt-1">{errors.father_name}</p>}
+                        {errors.father_name && <p className="text-destructive text-xs font-semibold mt-1 flex items-center gap-1">● {errors.father_name}</p>}
                     </div>
 
                     <div className="space-y-1.5">
-                        <Label htmlFor="mother_name" className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Mother's Name *</Label>
+                        <Label htmlFor="mother_name" className="text-xs font-bold text-slate-500 uppercase tracking-wider">Mother's Name *</Label>
                         <Input
                             id="mother_name"
                             value={form.mother_name}
                             onChange={(e) => onChange('mother_name', e.target.value)}
-                            className={`h-11 rounded-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all ${errors.mother_name ? 'border-destructive' : ''}`}
+                            className={`h-11 rounded-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all ${errors.mother_name ? 'border-destructive/60 bg-destructive/5' : ''}`}
                         />
-                        {errors.mother_name && <p className="text-destructive text-[11px] font-medium mt-1">{errors.mother_name}</p>}
+                        {errors.mother_name && <p className="text-destructive text-xs font-semibold mt-1 flex items-center gap-1">● {errors.mother_name}</p>}
                     </div>
 
                     <div className="space-y-1.5">
-                        <Label htmlFor="aadhaar_number" className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Aadhaar No. *</Label>
+                        <Label htmlFor="aadhaar_number" className="text-xs font-bold text-slate-500 uppercase tracking-wider">Aadhaar No. *</Label>
                         <Input
                             id="aadhaar_number"
                             placeholder="12 Digit ID"
                             value={form.aadhaar_number}
                             onChange={(e) => onChange('aadhaar_number', e.target.value)}
-                            className={`h-11 rounded-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all ${errors.aadhaar_number ? 'border-destructive' : ''}`}
+                            className={`h-11 rounded-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all ${errors.aadhaar_number ? 'border-destructive/60 bg-destructive/5' : ''}`}
                             maxLength={12}
                         />
-                        {errors.aadhaar_number && <p className="text-destructive text-[11px] font-medium mt-1">{errors.aadhaar_number}</p>}
+                        {errors.aadhaar_number && <p className="text-destructive text-xs font-semibold mt-1 flex items-center gap-1">● {errors.aadhaar_number}</p>}
                     </div>
 
                     {/* Row 3 - Full Width Address */}
                     <div className="space-y-1.5 md:col-span-3">
-                        <Label htmlFor="address" className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Residential Address *</Label>
+                        <Label htmlFor="address" className="text-xs font-bold text-slate-500 uppercase tracking-wider">Residential Address *</Label>
                         <textarea
                             id="address"
                             rows={3}
                             value={form.address}
                             onChange={(e) => onChange('address', e.target.value)}
-                            className={`w-full p-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all text-sm min-h-[100px] resize-y ${errors.address ? 'border-destructive' : ''}`}
+                            className={`w-full p-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all text-sm min-h-[100px] resize-y ${errors.address ? 'border-destructive/60 bg-destructive/5' : ''}`}
                         />
-                        {errors.address && <p className="text-destructive text-[11px] font-medium mt-1">{errors.address}</p>}
+                        {errors.address && <p className="text-destructive text-xs font-semibold mt-1 flex items-center gap-1">● {errors.address}</p>}
                     </div>
 
                     {/* Additional Fields */}
                     <div className="space-y-1.5">
-                        <Label htmlFor="gender" className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Gender *</Label>
+                        <Label htmlFor="gender" className="text-xs font-bold text-slate-500 uppercase tracking-wider">Gender *</Label>
                         <select
                             id="gender"
                             value={form.gender}
                             onChange={(e) => onChange('gender', e.target.value)}
-                            className={`w-full h-11 px-3 py-1 bg-white border border-slate-200 rounded-lg text-sm transition-all focus:border-blue-500 focus:ring-blue-500 cursor-pointer ${errors.gender ? 'border-destructive' : ''}`}
+                            className={`w-full h-11 px-3 py-1 bg-white border border-slate-200 rounded-lg text-sm transition-all focus:border-blue-500 focus:ring-blue-500 cursor-pointer ${errors.gender ? 'border-destructive/60 bg-destructive/5' : ''}`}
                         >
                             <option value="">Select</option>
                             <option value="Male">Male</option>
                             <option value="Female">Female</option>
                             <option value="Other">Other</option>
                         </select>
+                        {errors.gender && <p className="text-destructive text-xs font-semibold mt-1 flex items-center gap-1">● {errors.gender}</p>}
                     </div>
 
                     <div className="space-y-1.5">
@@ -180,53 +184,53 @@ export const PersonalDetailsSection = ({ form, errors, onChange, onFileChange, o
                     </div>
 
                     <div className="space-y-1.5">
-                        <Label htmlFor="customer_pan" className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">PAN Number *</Label>
+                        <Label htmlFor="customer_pan" className="text-xs font-bold text-slate-500 uppercase tracking-wider">PAN Number *</Label>
                         <Input
                             id="customer_pan"
                             placeholder="ABCDE1234F"
                             value={form.pan_number}
                             onChange={(e) => onChange('pan_number', e.target.value.toUpperCase())}
-                            className={`h-11 rounded-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all ${errors.pan_number ? 'border-destructive' : ''}`}
+                            className={`h-11 rounded-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all ${errors.pan_number ? 'border-destructive/60 bg-destructive/5' : ''}`}
                             maxLength={10}
                         />
-                        {errors.pan_number && <p className="text-destructive text-[11px] font-medium mt-1">{errors.pan_number}</p>}
+                        {errors.pan_number && <p className="text-destructive text-xs font-semibold mt-1 flex items-center gap-1">● {errors.pan_number}</p>}
                     </div>
 
                     <div className="space-y-1.5">
-                        <Label htmlFor="email" className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Email Address</Label>
+                        <Label htmlFor="email" className="text-xs font-bold text-slate-500 uppercase tracking-wider">Email Address</Label>
                         <Input
                             id="email"
                             type="email"
                             placeholder="name@example.com"
                             value={form.email}
                             onChange={(e) => onChange('email', e.target.value)}
-                            className={`h-11 rounded-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all ${errors.email ? 'border-destructive' : ''}`}
+                            className={`h-11 rounded-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all ${errors.email ? 'border-destructive/60 bg-destructive/5' : ''}`}
                         />
-                        {errors.email && <p className="text-destructive text-[11px] font-medium mt-1">{errors.email}</p>}
+                        {errors.email && <p className="text-destructive text-xs font-semibold mt-1 flex items-center gap-1">● {errors.email}</p>}
                     </div>
 
                     <div className="space-y-1.5">
-                        <Label htmlFor="village" className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Village *</Label>
+                        <Label htmlFor="village" className="text-xs font-bold text-slate-500 uppercase tracking-wider">Village *</Label>
                         <Input
                             id="village"
                             value={form.village}
                             onChange={(e) => onChange('village', e.target.value)}
-                            className={`h-11 rounded-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all ${errors.village ? 'border-destructive' : ''}`}
+                            className={`h-11 rounded-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all ${errors.village ? 'border-destructive/60 bg-destructive/5' : ''}`}
                         />
-                        {errors.village && <p className="text-destructive text-[11px] font-medium mt-1">{errors.village}</p>}
+                        {errors.village && <p className="text-destructive text-xs font-semibold mt-1 flex items-center gap-1">● {errors.village}</p>}
                     </div>
 
                     <div className="space-y-1.5">
-                        <Label htmlFor="pincode" className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Pincode *</Label>
+                        <Label htmlFor="pincode" className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pincode *</Label>
                         <Input
                             id="pincode"
                             placeholder="6 digits"
                             value={form.pincode}
                             onChange={(e) => onChange('pincode', e.target.value)}
-                            className={`h-11 rounded-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all ${errors.pincode ? 'border-destructive' : ''}`}
+                            className={`h-11 rounded-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500 transition-all ${errors.pincode ? 'border-destructive/60 bg-destructive/5' : ''}`}
                             maxLength={6}
                         />
-                        {errors.pincode && <p className="text-destructive text-[11px] font-medium mt-1">{errors.pincode}</p>}
+                        {errors.pincode && <p className="text-destructive text-xs font-semibold mt-1 flex items-center gap-1">● {errors.pincode}</p>}
                     </div>
                 </div>
             </div>

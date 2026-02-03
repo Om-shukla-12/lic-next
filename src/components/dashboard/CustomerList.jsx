@@ -68,24 +68,26 @@ export const CustomerList = React.memo(({ customers, isLoading, onEdit, onDelete
     return (
         <>
             {showSearch && (
-                <div className="mb-4 md:mb-8 relative max-w-md">
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                        <Search className="w-4 h-4" />
+                <div className="sticky top-[72px] z-20 bg-white/95 backdrop-blur-md py-3 md:py-4 -mx-1 px-1 mb-2 md:mb-4 border-b border-muted/5 shadow-sm">
+                    <div className="relative w-full">
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                            <Search className="w-4 h-4" />
+                        </div>
+                        <Input
+                            placeholder="Search customers by name, phone, or email..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-10 pr-10 h-10 md:h-12 rounded-lg md:rounded-xl border-muted/20 focus:ring-primary/20 text-sm md:text-base w-full shadow-sm"
+                        />
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery('')}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
+                            >
+                                <CloseIcon className="w-4 h-4" />
+                            </button>
+                        )}
                     </div>
-                    <Input
-                        placeholder="Search customers..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10 pr-10 h-9 md:h-11 rounded-lg md:rounded-xl border-muted/20 focus:ring-primary/20 text-sm md:text-base"
-                    />
-                    {searchQuery && (
-                        <button
-                            onClick={() => setSearchQuery('')}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                            <CloseIcon className="w-4 h-4" />
-                        </button>
-                    )}
                 </div>
             )}
 
@@ -111,7 +113,7 @@ export const CustomerList = React.memo(({ customers, isLoading, onEdit, onDelete
                                         {customer.plan || 'No Plan'}
                                     </div>
                                 </div>
-                                <div className="flex gap-1 md:gap-1.5 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="flex gap-1 md:gap-1.5 transition-opacity">
                                     <button
                                         onClick={() => onEdit(customer)}
                                         className="p-1 hover:bg-secondary/10 rounded-md text-secondary-foreground transition-colors"

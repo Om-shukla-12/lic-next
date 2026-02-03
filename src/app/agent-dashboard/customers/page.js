@@ -1,21 +1,23 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, X } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useAuth } from '@/hooks/useAuth';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useToast } from '@/hooks/use-toast';
 import { CustomerList } from '@/components/dashboard/CustomerList';
 import { useNavigationGuard } from '@/hooks/useNavigationGuard';
+import AddCustomerForm from '@/components/dashboard/AddCustomerForm';
 
 export default function AllCustomersPage() {
     const router = useRouter();
     const { authorized } = useAuth('agent');
+    const [editingCustomer, setEditingCustomer] = useState(null);
 
     // We don't strictly need navigation guard here but it's consistent
     useNavigationGuard(authorized);
@@ -24,15 +26,23 @@ export default function AllCustomersPage() {
     const { customers, isLoading, updateCustomer, deleteCustomer, downloadPDF } = useCustomers();
 
     const handleEditCustomer = useCallback((customer) => {
-        // Since editing happens on the main dashboard form, we should redirect back 
-        // with the intent to edit if we want full integration, or implement modal editing.
-        // For simplicity and speed, we'll redirect back to dashboard.
-        router.push('/agent-dashboard');
-        toast({
-            title: "Redirecting",
-            description: "Click edit on the dashboard to modify customer details.",
-        });
-    }, [router, toast]);
+        setEditingCustomer(customer);
+    }, []);
+
+    const handleCancelEdit = useCallback(() => {
+        setEditingCustomer(null);
+    }, []);
+
+    const handleUpdateSubmit = useCallback(async (formData) => {
+        if (!editingCustomer) return;
+        const result = await updateCustomer(editingCustomer._id, formData);
+        if (result.success) {
+            toast({ title: "Customer Updated", variant: "default" });
+            setEditingCustomer(null);
+        } else {
+            toast({ title: "Update Failed", description: result.error, variant: "destructive" });
+        }
+    }, [editingCustomer, updateCustomer, toast]);
 
     const handleDeleteCustomer = useCallback(async (customerId) => {
         const result = await deleteCustomer(customerId);
@@ -63,7 +73,7 @@ export default function AllCustomersPage() {
     }
 
     return (
-        <div className="min-h-screen bg-background flex flex-col">
+        <div className="min-h-screen bg-background flex flex-col relative">
             <Header />
 
             <main className="flex-1">
@@ -112,6 +122,33 @@ export default function AllCustomersPage() {
                     </div>
                 </section>
             </main>
+
+            {/* Edit Modal Overlay */}
+            {editingCustomer && (
+                <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 md:p-8">
+                    <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative shadow-2xl">
+                        <div className="sticky top-0 right-0 p-4 bg-white z-10 flex justify-between items-center border-b">
+                            <h2 className="text-xl font-bold text-primary">Edit Customer: {editingCustomer.fullName}</h2>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={handleCancelEdit}
+                                className="rounded-full hover:bg-red-50 hover:text-red-500"
+                            >
+                                <X className="w-6 h-6" />
+                            </Button>
+                        </div>
+                        <div className="p-4 md:p-6">
+                            <AddCustomerForm
+                                initialData={editingCustomer.rawData}
+                                onSubmit={handleUpdateSubmit}
+                                onCancel={handleCancelEdit}
+                                isProcessing={isLoading}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <Footer />
         </div>

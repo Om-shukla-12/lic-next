@@ -11,11 +11,17 @@ const ExistingPoliciesSection = dynamic(() => import('./ExistingPoliciesSection'
 const FormReviewStep = dynamic(() => import('./FormReviewStep').then(mod => mod.FormReviewStep), { ssr: false });
 import { Plus, X, ChevronRight, ChevronLeft } from 'lucide-react';
 import { customerSchema, nomineeSchema, jobSchema, medicalSchema, policySchema } from '@/lib/validations';
+import { useAuthContext } from '@/context/AuthContext';
+import { apiService } from '@/lib/api-service';
+import { useToast } from '@/hooks/use-toast';
 
 const STEPS_COUNT = 5;
 
 export default function AddCustomerForm({ onSubmit, onCancel, isProcessing, initialData = null }) {
+    const { token } = useAuthContext();
+    const { toast } = useToast();
     const isEdit = !!initialData;
+    const [isCheckingMobile, setIsCheckingMobile] = useState(false);
     const [currentStep, setCurrentStep] = useState(1);
     const [customerForm, setCustomerForm] = useState({
         customer_name: '', father_name: '', mother_name: '', spouse_name: '',
@@ -78,6 +84,14 @@ export default function AddCustomerForm({ onSubmit, onCancel, isProcessing, init
 
     const handleFormChange = (setter) => (field, value) => {
         setter(prev => ({ ...prev, [field]: value }));
+        // Clear error when user starts typing again
+        if (formErrors[field]) {
+            setFormErrors(prev => {
+                const newErrors = { ...prev };
+                delete newErrors[field];
+                return newErrors;
+            });
+        }
     };
 
     const handleFileChange = (e) => {
@@ -90,39 +104,57 @@ export default function AddCustomerForm({ onSubmit, onCancel, isProcessing, init
     };
 
     const validateStep = (step) => {
-        const errors = {};
+        let errors = { ...formErrors }; // Carry over manually set errors like duplicate mobile
+        const stepErrors = {};
         let isValid = true;
 
         if (step === 1) {
             const customerVal = customerSchema.safeParse(customerForm);
             if (!customerVal.success) {
-                customerVal.error.issues.forEach(i => errors[i.path[0]] = i.message);
+                customerVal.error.issues.forEach(i => stepErrors[i.path[0]] = i.message);
                 isValid = false;
             }
         } else if (step === 2) {
             const nomineeVal = nomineeSchema.safeParse(nomineeForm);
             if (!nomineeVal.success) {
-                nomineeVal.error.issues.forEach(i => errors[i.path[0] === 'relation' ? 'nominee_relation' : i.path[0] === 'age' ? 'nominee_age' : i.path[0]] = i.message);
+                nomineeVal.error.issues.forEach(i => stepErrors[i.path[0] === 'relation' ? 'nominee_relation' : i.path[0] === 'age' ? 'nominee_age' : i.path[0]] = i.message);
                 isValid = false;
             }
             const jobVal = jobSchema.safeParse(jobForm);
             if (!jobVal.success) {
-                jobVal.error.issues.forEach(i => errors[i.path[0] === 'address' ? 'job_address' : i.path[0]] = i.message);
+                jobVal.error.issues.forEach(i => stepErrors[i.path[0] === 'address' ? 'job_address' : i.path[0]] = i.message);
                 isValid = false;
             }
         } else if (step === 4) {
             const policyVal = policySchema.safeParse(policyForm);
             if (!policyVal.success) {
-                policyVal.error.issues.forEach(i => errors[i.path[0]] = i.message);
+                policyVal.error.issues.forEach(i => stepErrors[i.path[0]] = i.message);
                 isValid = false;
             }
         }
 
-        setFormErrors(errors);
-        return isValid;
+        // Merge step errors but preserve mobile_number duplicate error if it exists
+        const finalErrors = { ...stepErrors };
+        if (errors.mobile_number && !stepErrors.mobile_number) {
+            // Keep the duplicate error only if the schema validation didn't find its own error
+            finalErrors.mobile_number = errors.mobile_number;
+            isValid = false;
+        }
+
+        setFormErrors(finalErrors);
+        return isValid && Object.keys(finalErrors).length === 0;
     };
 
     const handleNext = () => {
+        if (isCheckingMobile) {
+            toast({
+                title: "Checking Availability",
+                description: "Please wait while we verify the mobile number.",
+                variant: "default",
+            });
+            return;
+        }
+
         if (validateStep(currentStep)) {
             if (currentStep < STEPS_COUNT) {
                 setCurrentStep(prev => prev + 1);
@@ -131,11 +163,13 @@ export default function AddCustomerForm({ onSubmit, onCancel, isProcessing, init
                 handleFinalSubmit();
             }
         } else {
-            // Scroll to the first error message
+            // Scroll to the first error message with better mobile handling
             setTimeout(() => {
                 const firstError = document.querySelector('.text-destructive');
                 if (firstError) {
-                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    const yOffset = -100; // Account for header
+                    const y = firstError.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                    window.scrollTo({ top: y, behavior: 'smooth' });
                 }
             }, 100);
         }
@@ -174,6 +208,29 @@ export default function AddCustomerForm({ onSubmit, onCancel, isProcessing, init
         onSubmit(payload);
     };
 
+    const handleMobileCheck = async () => {
+        const mobile = customerForm.mobile_number;
+        if (!mobile || !/^\d{10}$/.test(mobile) || isEdit) return;
+
+        setIsCheckingMobile(true);
+        try {
+            const { exists } = await apiService.checkMobileAvailability(mobile, token);
+            if (exists) {
+                setFormErrors(prev => ({ ...prev, mobile_number: 'Mobile number already exists in database' }));
+            } else {
+                setFormErrors(prev => {
+                    const newErrors = { ...prev };
+                    delete newErrors.mobile_number;
+                    return newErrors;
+                });
+            }
+        } catch (error) {
+            console.error("Mobile check failed:", error);
+        } finally {
+            setIsCheckingMobile(false);
+        }
+    };
+
     return (
         <div className="bg-[#F8FAFC] rounded-3xl shadow-xl shadow-slate-200/50 overflow-hidden border border-white max-w-5xl mx-auto flex flex-col min-h-[600px]">
             {/* Header / Progress Bar */}
@@ -204,6 +261,8 @@ export default function AddCustomerForm({ onSubmit, onCancel, isProcessing, init
                                 onChange={handleFormChange(setCustomerForm)}
                                 onFileChange={handleFileChange}
                                 onRemovePhoto={() => handleFormChange(setCustomerForm)('profile_picture', '')}
+                                onMobileBlur={handleMobileCheck}
+                                isCheckingMobile={isCheckingMobile}
                             />
                         </div>
                     )}
