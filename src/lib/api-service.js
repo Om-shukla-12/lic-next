@@ -22,16 +22,16 @@ export const apiService = {
      * Handle API responses
      */
     async handleResponse(response) {
-        console.log(`API Response: ${response.url} [${response.status}]`);
+        // Reduced logging for performance
+        if (process.env.NODE_ENV === 'development') {
+            console.log(`API [${response.status}] ${response.url.split('?')[0]}`);
+        }
 
         if (response.status === 401) {
-            // Global 401 handler could be implemented here if we had access to context
-            // For now, we'll throw a specific error that the context or hooks can catch
             throw new Error('UNAUTHORIZED');
         }
 
         const data = await response.json().catch(() => ({}));
-        console.log('Parsed API Data:', data);
 
         if (!response.ok) {
             const message = data.detail || data.message || 'An unexpected error occurred';

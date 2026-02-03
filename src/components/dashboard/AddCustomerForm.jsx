@@ -1,12 +1,14 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { PersonalDetailsSection } from './PersonalDetailsSection';
-import { FamilyMembersSection } from './FamilyMembersSection';
-import { NomineeSection } from './NomineeSection';
-import { OccupationMedicalSection } from './OccupationMedicalSection';
-import { PolicyDetailsSection } from './PolicyDetailsSection';
-import { ExistingPoliciesSection } from './ExistingPoliciesSection';
-import { FormReviewStep } from './FormReviewStep';
+import dynamic from 'next/dynamic';
+
+const PersonalDetailsSection = dynamic(() => import('./PersonalDetailsSection').then(mod => mod.PersonalDetailsSection), { ssr: false });
+const FamilyMembersSection = dynamic(() => import('./FamilyMembersSection').then(mod => mod.FamilyMembersSection), { ssr: false });
+const NomineeSection = dynamic(() => import('./NomineeSection').then(mod => mod.NomineeSection), { ssr: false });
+const OccupationMedicalSection = dynamic(() => import('./OccupationMedicalSection').then(mod => mod.OccupationMedicalSection), { ssr: false });
+const PolicyDetailsSection = dynamic(() => import('./PolicyDetailsSection').then(mod => mod.PolicyDetailsSection), { ssr: false });
+const ExistingPoliciesSection = dynamic(() => import('./ExistingPoliciesSection').then(mod => mod.ExistingPoliciesSection), { ssr: false });
+const FormReviewStep = dynamic(() => import('./FormReviewStep').then(mod => mod.FormReviewStep), { ssr: false });
 import { Plus, X, ChevronRight, ChevronLeft } from 'lucide-react';
 import { customerSchema, nomineeSchema, jobSchema, medicalSchema, policySchema } from '@/lib/validations';
 

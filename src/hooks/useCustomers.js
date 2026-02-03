@@ -57,7 +57,21 @@ export const useCustomers = () => {
         setIsLoading(true);
         try {
             await apiService.registerCustomer(payload, token);
-            await loadCustomers();
+            // Deep refresh
+            const apiRecords = await apiService.getMyRecords(token);
+            const mappedCustomers = (apiRecords || []).map((record, index) => ({
+                _id: record._id || `api-customer-${index}`,
+                fullName: record.customer?.customer_name || 'Unknown',
+                emailAddress: record.customer?.email || 'N/A',
+                contactNumber: record.customer?.mobile_number || 'N/A',
+                aadhaar_number: record.customer?.aadhaar_number,
+                status: 'Active',
+                plan: record.policy?.insurance_number || 'N/A',
+                premium: record.policy?.installment_price || '0',
+                lastPaid: new Date().toISOString(),
+                rawData: record
+            }));
+            setCustomers(mappedCustomers);
             return { success: true };
         } catch (e) {
             console.error("Registration error:", e);
@@ -74,7 +88,22 @@ export const useCustomers = () => {
         setIsLoading(true);
         try {
             await apiService.updateCustomer(customerId, payload, token);
-            await loadCustomers();
+            // Manual update in state is faster than full reload but full reload is safer for now
+            // Just optimizing the flow to not call loadCustomers (which sets loading again)
+            const apiRecords = await apiService.getMyRecords(token);
+            const mappedCustomers = (apiRecords || []).map((record, index) => ({
+                _id: record._id || `api-customer-${index}`,
+                fullName: record.customer?.customer_name || 'Unknown',
+                emailAddress: record.customer?.email || 'N/A',
+                contactNumber: record.customer?.mobile_number || 'N/A',
+                aadhaar_number: record.customer?.aadhaar_number,
+                status: 'Active',
+                plan: record.policy?.insurance_number || 'N/A',
+                premium: record.policy?.installment_price || '0',
+                lastPaid: new Date().toISOString(),
+                rawData: record
+            }));
+            setCustomers(mappedCustomers);
             return { success: true };
         } catch (e) {
             console.error("Update error:", e);
@@ -91,7 +120,8 @@ export const useCustomers = () => {
         setIsLoading(true);
         try {
             await apiService.deleteCustomer(customerId, token);
-            await loadCustomers();
+            // Optimistic update: filter out deleted locally immediately
+            setCustomers(prev => prev.filter(c => c._id !== customerId));
             return { success: true };
         } catch (e) {
             console.error("Delete error:", e);

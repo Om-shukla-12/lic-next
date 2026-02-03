@@ -14,7 +14,7 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-export const CustomerList = React.memo(({ customers, isLoading, onEdit, onDelete, onView, onDownload }) => {
+export const CustomerList = React.memo(({ customers, isLoading, onEdit, onDelete, onView, onDownload, showSearch = true }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [downloadingId, setDownloadingId] = useState(null);
     const [customerToDelete, setCustomerToDelete] = useState(null);
@@ -67,25 +67,27 @@ export const CustomerList = React.memo(({ customers, isLoading, onEdit, onDelete
 
     return (
         <>
-            <div className="mb-8 relative max-w-md">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    <Search className="w-4 h-4" />
+            {showSearch && (
+                <div className="mb-4 md:mb-8 relative max-w-md">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                        <Search className="w-4 h-4" />
+                    </div>
+                    <Input
+                        placeholder="Search customers..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10 pr-10 h-9 md:h-11 rounded-lg md:rounded-xl border-muted/20 focus:ring-primary/20 text-sm md:text-base"
+                    />
+                    {searchQuery && (
+                        <button
+                            onClick={() => setSearchQuery('')}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                            <CloseIcon className="w-4 h-4" />
+                        </button>
+                    )}
                 </div>
-                <Input
-                    placeholder="Search by name, email, mobile or policy..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 pr-10 h-11 rounded-xl border-muted/20 focus:ring-primary/20"
-                />
-                {searchQuery && (
-                    <button
-                        onClick={() => setSearchQuery('')}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                        <CloseIcon className="w-4 h-4" />
-                    </button>
-                )}
-            </div>
+            )}
 
             {filteredCustomers.length === 0 ? (
                 <div className="text-center py-12 bg-muted/10 rounded-2xl border border-dashed border-muted/20">
@@ -94,60 +96,62 @@ export const CustomerList = React.memo(({ customers, isLoading, onEdit, onDelete
                     <p className="text-sm text-muted-foreground">Try adjusting your search query</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                     {filteredCustomers.map((customer) => (
                         <div
                             key={customer._id}
-                            className="bg-card rounded-2xl shadow-premium border border-muted/20 p-6 transition-all hover:shadow-hover group"
+                            className="bg-card rounded-lg md:rounded-xl shadow-premium border border-muted/20 p-3 md:p-4 transition-all hover:shadow-hover group"
                         >
-                            <div className="flex justify-between items-start mb-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
-                                        <Users className="w-6 h-6" />
+                            <div className="flex justify-between items-start mb-1.5 md:mb-2">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-6 h-6 md:w-8 md:h-8 bg-primary/10 rounded-md md:rounded-lg flex items-center justify-center text-primary">
+                                        <Users className="w-3 h-3 md:w-4 md:h-4 text-primary" />
                                     </div>
-                                    <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/30 px-2 py-1 rounded">
+                                    <div className="text-[7px] md:text-[9px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/30 px-1 py-0.5 rounded">
                                         {customer.plan || 'No Plan'}
                                     </div>
                                 </div>
-                                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="flex gap-1 md:gap-1.5 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button
                                         onClick={() => onEdit(customer)}
-                                        className="p-2 hover:bg-secondary/10 rounded-lg text-secondary-foreground transition-colors"
+                                        className="p-1 hover:bg-secondary/10 rounded-md text-secondary-foreground transition-colors"
                                         title="Edit Customer"
                                     >
-                                        <Edit2 className="w-4 h-4" />
+                                        <Edit2 className="w-3 h-3 md:w-3.5 md:h-3.5" />
                                     </button>
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             setCustomerToDelete(customer);
                                         }}
-                                        className="p-2 hover:bg-destructive/10 rounded-lg text-destructive transition-colors"
+                                        className="p-1 hover:bg-destructive/10 rounded-md text-destructive transition-colors"
                                         title="Delete Customer"
                                     >
-                                        <Trash2 className="w-4 h-4" />
+                                        <Trash2 className="w-3 h-3 md:w-3.5 md:h-3.5" />
                                     </button>
                                 </div>
                             </div>
 
-                            <h3 className="font-heading text-lg font-bold text-card-heading mb-1">
+                            <h3 className="font-heading text-sm md:text-base font-bold text-card-heading mb-0.5 truncate">
                                 {customer.fullName}
                             </h3>
-                            <p className="font-paragraph text-sm text-foreground/70 mb-1 truncate">
-                                {customer.emailAddress}
-                            </p>
-                            <p className="font-paragraph text-sm text-foreground/70 mb-4">
-                                {customer.contactNumber}
-                            </p>
+                            <div className="space-y-0.5 mb-2 md:mb-3">
+                                <p className="font-paragraph text-[10px] md:text-xs text-foreground/70 truncate">
+                                    {customer.emailAddress}
+                                </p>
+                                <p className="font-paragraph text-[10px] md:text-xs text-foreground/70">
+                                    {customer.contactNumber}
+                                </p>
+                            </div>
 
-                            <div className="flex items-center justify-between pt-4 border-t border-muted/20 gap-2">
+                            <div className="flex items-center justify-between pt-2 border-t border-muted/10 gap-2">
                                 <Button
                                     size="sm"
                                     variant="ghost"
                                     onClick={() => onView(customer._id)}
-                                    className="h-8 text-xs font-bold text-primary hover:bg-primary/5 px-4 flex items-center gap-1.5"
+                                    className="h-6 md:h-7 text-[9px] md:text-[10px] font-bold text-primary hover:bg-primary/5 px-2 flex items-center gap-1"
                                 >
-                                    <Eye className="w-3.5 h-3.5" />
+                                    <Eye className="w-2.5 h-2.5 md:w-3 md:h-3" />
                                     View
                                 </Button>
                                 <Button
@@ -155,17 +159,17 @@ export const CustomerList = React.memo(({ customers, isLoading, onEdit, onDelete
                                     variant="outline"
                                     onClick={(e) => handleDownload(e, customer)}
                                     disabled={downloadingId === customer._id}
-                                    className="h-8 text-[11px] font-bold flex items-center gap-1.5 border-primary/20 hover:border-primary/40 hover:bg-primary/5 text-primary"
+                                    className="h-6 md:h-7 text-[9px] md:text-[10px] font-bold flex items-center gap-1 border-primary/20 hover:border-primary/40 hover:bg-primary/5 text-primary"
                                 >
                                     {downloadingId === customer._id ? (
                                         <>
-                                            <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                                            Downloading...
+                                            <div className="w-2 h-2 md:w-2.5 md:h-2.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                            ...
                                         </>
                                     ) : (
                                         <>
-                                            <Download className="w-3.5 h-3.5" />
-                                            Download PDF
+                                            <Download className="w-2.5 h-2.5 md:w-3 md:h-3" />
+                                            PDF
                                         </>
                                     )}
                                 </Button>
