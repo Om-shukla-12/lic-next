@@ -1,62 +1,118 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import dynamic from 'next/dynamic';
 
 const PersonalDetailsSection = dynamic(() => import('./PersonalDetailsSection').then(mod => mod.PersonalDetailsSection), { ssr: false });
 const FamilyMembersSection = dynamic(() => import('./FamilyMembersSection').then(mod => mod.FamilyMembersSection), { ssr: false });
-const NomineeSection = dynamic(() => import('./NomineeSection').then(mod => mod.NomineeSection), { ssr: false });
 const OccupationMedicalSection = dynamic(() => import('./OccupationMedicalSection').then(mod => mod.OccupationMedicalSection), { ssr: false });
 const PolicyDetailsSection = dynamic(() => import('./PolicyDetailsSection').then(mod => mod.PolicyDetailsSection), { ssr: false });
-const ExistingPoliciesSection = dynamic(() => import('./ExistingPoliciesSection').then(mod => mod.ExistingPoliciesSection), { ssr: false });
 const FormReviewStep = dynamic(() => import('./FormReviewStep').then(mod => mod.FormReviewStep), { ssr: false });
 import { Plus, X, ChevronRight, ChevronLeft } from 'lucide-react';
-import { customerSchema, nomineeSchema, jobSchema, medicalSchema, policySchema } from '@/lib/validations';
+import { customerSchema, jobSchema, medicalSchema, policySchema } from '@/lib/validations';
 import { useAuthContext } from '@/context/AuthContext';
 import { apiService } from '@/lib/api-service';
 import { useToast } from '@/hooks/use-toast';
+import { PdfUploadArea } from './PdfUploadArea';
 
 const STEPS_COUNT = 5;
+
+const STORAGE_KEY = 'lic_add_customer_form';
 
 export default function AddCustomerForm({ onSubmit, onCancel, isProcessing, initialData = null }) {
     const { token } = useAuthContext();
     const { toast } = useToast();
     const isEdit = !!initialData;
+    const [selectedFile, setSelectedFile] = useState(null);
+
+    // Helper to load draft data for lazy initialization
+    const getDraft = (key, defaultVal) => {
+        if (isEdit || typeof window === 'undefined') return defaultVal;
+
+        try {
+            const saved = sessionStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                return parsed[key] !== undefined ? parsed[key] : defaultVal;
+            }
+        } catch (e) {
+            console.error('Error loading draft', e);
+        }
+        return defaultVal;
+    };
+
     const [isCheckingMobile, setIsCheckingMobile] = useState(false);
-    const [currentStep, setCurrentStep] = useState(1);
-    const [customerForm, setCustomerForm] = useState({
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isExtracting, setIsExtracting] = useState(false);
+    const [currentStep, setCurrentStep] = useState(() => getDraft('currentStep', 1));
+    const [customerForm, setCustomerForm] = useState(() => getDraft('customerForm', {
         customer_name: '', father_name: '', mother_name: '', spouse_name: '',
-        dob: '', address: '', village: '', pincode: '',
+        spouse_relation: '', age: '', dob: '', address: '', village: '', pincode: '',
         mobile_number: '', email: '', aadhaar_number: '', pan_number: '',
         profile_picture: '', gender: ''
-    });
+    }));
 
-    const [nomineeForm, setNomineeForm] = useState({ nominee_name: '', relation: '', age: '', pan_number: '' });
-    const [jobForm, setJobForm] = useState({ type: 'Job', address: '', annual_income: '' });
-    const [medicalForm, setMedicalForm] = useState({ height: '', weight: '' });
-    const [policyForm, setPolicyForm] = useState({
-        insurance_rate: 8.5,
+    const [jobForm, setJobForm] = useState(() => getDraft('jobForm', { type: 'Job', address: '', annual_income: '' }));
+    const [medicalForm, setMedicalForm] = useState(() => getDraft('medicalForm', { height: '', weight: '' }));
+    const [policyForm, setPolicyForm] = useState(() => getDraft('policyForm', {
+        policy_type: '',
+        name: '',
+        policy_no: '',
+        insurance_rate: '8.5',
         insurance_number: `LIC${Date.now()}`,
-        premium_year: 20,
-        maturity_date: '',
+        premium_year: '20',
+        maturity_years: '',
         installment_type: 'Monthly',
         installment_price: '',
         birth_place: '',
-    });
+        nominee: {
+            nominee_name: '',
+            relation: '',
+            age: '',
+            pan_number: ''
+        }
+    }));
 
-    const [familyMembers, setFamilyMembers] = useState([]);
-    const [existingPolicies, setExistingPolicies] = useState([]);
+    const [familyMembers, setFamilyMembers] = useState(() => getDraft('familyMembers', []));
     const [formErrors, setFormErrors] = useState({});
+
+    // Guard to prevent overwriting with initial state during the very first render cycle
+    const isReadyToSave = useRef(false);
+
+    // Enable saving after the first render
+    useEffect(() => {
+        isReadyToSave.current = true;
+    }, []);
+
+    // Save data on changes
+    useEffect(() => {
+        if (isEdit || !isReadyToSave.current) return;
+
+        const dataToSave = {
+            customerForm,
+            jobForm,
+            medicalForm,
+            policyForm,
+            familyMembers,
+            currentStep,
+            timestamp: Date.now()
+        };
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+    }, [customerForm, jobForm, medicalForm, policyForm, familyMembers, currentStep, isEdit]);
 
     // Populate form data if in edit mode
     useEffect(() => {
-        if (initialData) {
+        if (initialData && initialData.policies && initialData.policies[0]) {
+            const firstPolicy = initialData.policies[0];
             setCustomerForm({
                 ...initialData.customer,
-                profile_picture: initialData.customer?.profile_picture || ''
-            });
-            setNomineeForm({
-                ...initialData.nominee,
-                age: initialData.nominee?.age?.toString() || ''
+                age: initialData.customer?.age || '',
+                spouse_relation: initialData.customer?.spouse_relation || '',
+                profile_picture:
+                    initialData.customer?.profile_picture ||
+                    initialData.customer?.profile_photo ||
+                    initialData?.profile_picture ||
+                    initialData?.profile_photo ||
+                    ''
             });
             setJobForm({
                 ...initialData.job_business,
@@ -67,17 +123,25 @@ export default function AddCustomerForm({ onSubmit, onCancel, isProcessing, init
                 weight: initialData.medical?.weight?.toString() || ''
             });
             setPolicyForm({
-                ...initialData.policy,
-                insurance_rate: initialData.policy?.insurance_rate || 8.5,
-                premium_year: initialData.policy?.premium_year || 20,
-                installment_price: initialData.policy?.installment_price?.toString() || ''
+                policy_type: firstPolicy.policy_type || '',
+                name: firstPolicy.name || '',
+                policy_no: firstPolicy.policy_no?.toString() || '',
+                insurance_rate: firstPolicy.insurance_rate?.toString() || '8.5',
+                insurance_number: firstPolicy.insurance_number || '',
+                premium_year: firstPolicy.premium_year?.toString() || '20',
+                maturity_years: firstPolicy.maturity_years?.toString() || '',
+                installment_type: firstPolicy.installment_type || 'Monthly',
+                installment_price: firstPolicy.installment_price?.toString() || '',
+                birth_place: firstPolicy.birth_place || '',
+                nominee: {
+                    nominee_name: firstPolicy.nominee?.nominee_name || '',
+                    relation: firstPolicy.nominee?.relation || '',
+                    age: firstPolicy.nominee?.age?.toString() || '',
+                    pan_number: firstPolicy.nominee?.pan_number || ''
+                }
             });
             setFamilyMembers((initialData.family_members || []).map(m => ({
-                fullName: m.name, relationship: m.relation, dateOfBirth: m.dob, gender: 'Male', age: m.age?.toString() || '', aadhaarNumber: ''
-            })));
-            setExistingPolicies((initialData.existing_family_policies || []).map(p => ({
-                name: p.name, relation: p.relation, policyNumber: p.policy_number,
-                policyDate: p.policy_date, policyAmount: p.policy_amount?.toString() || ''
+                fullName: m.name, dateOfBirth: m.dob, age: m.age?.toString() || ''
             })));
         }
     }, [initialData]);
@@ -85,10 +149,17 @@ export default function AddCustomerForm({ onSubmit, onCancel, isProcessing, init
     const handleFormChange = (setter) => (field, value) => {
         setter(prev => ({ ...prev, [field]: value }));
         // Clear error when user starts typing again
-        if (formErrors[field]) {
+        if (formErrors[field] || (field === 'nominee')) {
             setFormErrors(prev => {
                 const newErrors = { ...prev };
-                delete newErrors[field];
+                if (field === 'nominee') {
+                    // Clear all nominee related errors if the nominee object changes
+                    Object.keys(newErrors).forEach(key => {
+                        if (key.startsWith('nominee_')) delete newErrors[key];
+                    });
+                } else {
+                    delete newErrors[field];
+                }
                 return newErrors;
             });
         }
@@ -96,10 +167,211 @@ export default function AddCustomerForm({ onSubmit, onCancel, isProcessing, init
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => handleFormChange(setCustomerForm)('profile_picture', reader.result);
-            reader.readAsDataURL(file);
+        if (!file) return;
+
+        // Store file locally to pass to update logic later
+        setSelectedFile(file);
+
+        // Preview immediate
+        const reader = new FileReader();
+        reader.onloadend = () => handleFormChange(setCustomerForm)('profile_picture', reader.result);
+        reader.readAsDataURL(file);
+    };
+
+    const handlePdfExtract = async (file) => {
+        if (!file || !token) return;
+
+        setIsExtracting(true);
+        console.log('🚀 Starting PDF extraction for:', file.name);
+
+        const formatDateForInput = (dateStr) => {
+            if (!dateStr) return '';
+            try {
+                // Handle DD/MM/YYYY or DD-MM-YYYY
+                if (dateStr.includes('/') || (dateStr.includes('-') && dateStr.split('-')[0].length < 4)) {
+                    const parts = dateStr.split(/[\/\-]/);
+                    if (parts.length === 3) {
+                        const day = parts[0].padStart(2, '0');
+                        const month = parts[1].padStart(2, '0');
+                        const year = parts[2];
+                        return `${year}-${month}-${day}`;
+                    }
+                }
+                const date = new Date(dateStr);
+                if (!isNaN(date.getTime())) {
+                    return date.toISOString().split('T')[0];
+                }
+            } catch (e) {
+                console.warn('Date parsing failed for:', dateStr);
+            }
+            return dateStr;
+        };
+
+        try {
+            const response = await apiService.uploadPdfAndExtract(file, token);
+            console.log('✅ Raw Extracted Response:', response);
+
+            // The user's log confirms data is inside response.extracted_data
+            const data = response.extracted_data || response;
+
+            // CHECK FOR BACKEND WORKFLOW ERRORS
+            // The backend might return 200 OK but with a body indicating the n8n workflow is down.
+            // Example: {code: 404, message: "The requested webhook ... is not registered." }
+            if (data.code === 404 || (data.message && data.message.includes('not registered'))) {
+                console.error("❌ Backend Workflow Logic Error:", data);
+                toast({
+                    title: "Server Configuration Error",
+                    description: "The AI extraction workflow is not active on the server. Please contact the administrator.",
+                    variant: "destructive",
+                });
+                return;
+            }
+
+            if (data && response.success !== false) {
+                // 1. Map Customer Details
+                const cust = data.customer || data;
+                if (cust) {
+                    console.log('📝 Mapping Customer Form...', cust);
+                    setCustomerForm(prev => {
+                        const next = {
+                            ...prev,
+                            // Handle snake_case, camelCase, and variations
+                            customer_name: (cust.customer_name || cust.name || cust.fullName || cust.full_name || prev.customer_name || '').toString(),
+                            father_name: (cust.father_name || cust.fatherName || cust.father_s_name || prev.father_name || '').toString(),
+                            mother_name: (cust.mother_name || cust.motherName || prev.mother_name || '').toString(),
+                            spouse_name: (cust.spouse_name || cust.spouseName || prev.spouse_name || '').toString(),
+                            spouse_relation: (cust.spouse_relation || cust.spouseRelation || prev.spouse_relation || '').toString(),
+                            dob: formatDateForInput(cust.dob || cust.date_of_birth || cust.birthDate || prev.dob),
+                            address: (cust.address || cust.residential_address || cust.permanent_address || prev.address || '').toString(),
+                            mobile_number: (cust.mobile_number || cust.phone || cust.contact_number || cust.mobile || prev.mobile_number || '').toString(),
+                            aadhaar_number: (cust.aadhaar_number || cust.aadhaar || cust.uid || prev.aadhaar_number || '').toString(),
+                            pan_number: (cust.pan_number || cust.pan || cust.panNo || prev.pan_number || '').toString().toUpperCase(),
+                            gender: (cust.gender || cust.sex || prev.gender || 'Male').toString(), // Default or existing
+                            email: (cust.email || cust.email_id || prev.email || '').toString(),
+                            village: (cust.village || cust.city || cust.town || prev.village || '').toString(),
+                            pincode: (cust.pincode || cust.pin_code || cust.zip || prev.pincode || '').toString(),
+
+                            // CRITICAL: age MUST be a number for customerSchema validation
+                            age: cust.age ? parseInt(cust.age) : (prev.age ? parseInt(prev.age) : '')
+                        };
+                        console.log('   -> Next Customer State:', next);
+                        return next;
+                    });
+                }
+
+                // 2. Map Job/Business Details
+                const job = data.job_business || data.job || data.occupation;
+                if (job) {
+                    console.log('💼 Mapping Job Form...', job);
+                    setJobForm(prev => {
+                        const next = {
+                            ...prev,
+                            type: (job.type || job.occupation || job.jobType || prev.type || 'Job').toString(),
+                            address: (job.address || job.office_address || job.work_address || prev.address || '').toString(),
+                            annual_income: (job.annual_income || job.income || job.salary || prev.annual_income || '').toString()
+                        };
+                        return next;
+                    });
+                }
+
+                // 3. Map Medical Details
+                const medical = data.medical || data.health;
+                if (medical) {
+                    console.log('🏥 Mapping Medical Form...', medical);
+                    setMedicalForm(prev => {
+                        const next = {
+                            ...prev,
+                            height: (medical.height || prev.height || '').toString(),
+                            weight: (medical.weight || prev.weight || '').toString()
+                        };
+                        return next;
+                    });
+                }
+
+                // 4. Map Family Members
+                const fMembers = data.family_members || data.family || data.dependents;
+                if (fMembers && Array.isArray(fMembers)) {
+                    console.log('👨‍👩‍👧‍👦 Mapping Family Members...', fMembers);
+                    setFamilyMembers(fMembers.map(m => ({
+                        fullName: (m.name || m.fullName || m.customer_name || '').toString(),
+                        dateOfBirth: formatDateForInput(m.dob || m.date_of_birth || m.birthDate || ''),
+                        age: (m.age || '').toString(),
+                        relation: (m.relation || m.relationship || '').toString() // If applicable
+                    })));
+                }
+
+                // 5. Map Policy Details
+                // Handle both single object or array of policies
+                let policies = [];
+                if (data.policies && Array.isArray(data.policies)) policies = data.policies;
+                else if (data.policy) policies = [data.policy];
+                else if (data.policy_no) policies = [data]; // If data IS the policy
+
+                const policy = policies.length > 0 ? policies[0] : null;
+
+                if (policy) {
+                    console.log('📄 Mapping Policy Form...', policy);
+                    setPolicyForm(prev => {
+                        const next = {
+                            ...prev,
+                            policy_no: (policy.policy_no || policy.policyNo || policy.policyNumber || prev.policy_no || '').toString(),
+                            insurance_number: (policy.insurance_number || policy.insuranceNo || policy.id || prev.insurance_number || '').toString(),
+                            name: (policy.name || policy.customer_name || policy.proposer_name || cust?.customer_name || prev.name || '').toString(),
+                            policy_type: (policy.policy_type || policy.type || prev.policy_type || 'self').toString(),
+
+                            // Numeric fields
+                            installment_price: policy.installment_price || policy.premium_amount || policy.premium || prev.installment_price || '',
+                            insurance_rate: policy.insurance_rate || policy.sum_assured || policy.sumAssured || prev.insurance_rate || '',
+                            premium_year: policy.premium_year || policy.term || policy.policy_term || prev.premium_year || '',
+                            maturity_years: policy.maturity_years || policy.maturity || policy.maturity_term || prev.maturity_years || '',
+
+                            // Dates & Place
+                            birth_place: (policy.birth_place || policy.birthPlace || prev.birth_place || '').toString(),
+                            commencement_date: formatDateForInput(policy.commencement_date || policy.policy_date || policy.date_of_commencement || prev.commencement_date),
+                            table_number: (policy.table_number || policy.plan_number || policy.plan || prev.table_number || '').toString(),
+
+                            // Nominee
+                            nominee: {
+                                nominee_name: (policy.nominee?.nominee_name || policy.nominee?.name || policy.nomineeName || prev.nominee.nominee_name || '').toString(),
+                                relation: (policy.nominee?.relation || policy.nominee?.relationship || prev.nominee.relation || '').toString(),
+                                age: (policy.nominee?.age || prev.nominee.age || '').toString(),
+                                pan_number: (policy.nominee?.pan_number || policy.nominee?.pan || prev.nominee.pan_number || '').toString().toUpperCase()
+                            }
+                        };
+                        console.log('   -> Next Policy State:', next);
+                        return next;
+                    });
+                }
+
+                // After mapping everything, run a quick validation check internally to see what's missing
+                setTimeout(() => {
+                    console.log('🔍 Running internal validation check for Step 1...');
+                    const isValid = validateStep(1);
+                    if (!isValid) {
+                        console.warn('⚠️ Step 1 validation failed after magic fill. Mandatory fields like Gender or Father Name might be missing or invalid.');
+                        toast({
+                            title: "Forms Filled with Gaps",
+                            description: "Some required fields were missing from the PDF. Please check highlighted errors.",
+                            variant: "default",
+                        });
+                    }
+                }, 800);
+
+                toast({
+                    title: "Magic Fill Complete! ✨",
+                    description: "Data has been automatically extracted and populated into the form.",
+                    variant: "default",
+                });
+            }
+        } catch (error) {
+            console.error("❌ PDF extraction failed:", error);
+            toast({
+                title: "Extraction Failed",
+                description: "Could not extract data from this PDF. Please verify the file and try again.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsExtracting(false);
         }
     };
 
@@ -115,11 +387,6 @@ export default function AddCustomerForm({ onSubmit, onCancel, isProcessing, init
                 isValid = false;
             }
         } else if (step === 2) {
-            const nomineeVal = nomineeSchema.safeParse(nomineeForm);
-            if (!nomineeVal.success) {
-                nomineeVal.error.issues.forEach(i => stepErrors[i.path[0] === 'relation' ? 'nominee_relation' : i.path[0] === 'age' ? 'nominee_age' : i.path[0]] = i.message);
-                isValid = false;
-            }
             const jobVal = jobSchema.safeParse(jobForm);
             if (!jobVal.success) {
                 jobVal.error.issues.forEach(i => stepErrors[i.path[0] === 'address' ? 'job_address' : i.path[0]] = i.message);
@@ -128,7 +395,21 @@ export default function AddCustomerForm({ onSubmit, onCancel, isProcessing, init
         } else if (step === 4) {
             const policyVal = policySchema.safeParse(policyForm);
             if (!policyVal.success) {
-                policyVal.error.issues.forEach(i => stepErrors[i.path[0]] = i.message);
+                policyVal.error.issues.forEach(i => {
+                    // Handle nested nominee errors and map to UI keys
+                    if (i.path[0] === 'nominee' && i.path[1]) {
+                        const subPath = i.path[1];
+                        const keyMap = {
+                            'nominee_name': 'nominee_name',
+                            'relation': 'nominee_relation',
+                            'age': 'nominee_age',
+                            'pan_number': 'nominee_pan'
+                        };
+                        stepErrors[keyMap[subPath] || `nominee_${subPath}`] = i.message;
+                    } else {
+                        stepErrors[i.path[0]] = i.message;
+                    }
+                });
                 isValid = false;
             }
         }
@@ -186,26 +467,74 @@ export default function AddCustomerForm({ onSubmit, onCancel, isProcessing, init
 
     const handleFinalSubmit = () => {
         const payload = {
-            customer: customerForm,
-            nominee: { ...nomineeForm, age: parseInt(nomineeForm.age) || 0 },
+            customer: {
+                customer_name: customerForm.customer_name,
+                father_name: customerForm.father_name,
+                mother_name: customerForm.mother_name,
+                spouse_name: customerForm.spouse_name,
+                spouse_relation: customerForm.spouse_relation,
+                dob: customerForm.dob,
+                address: customerForm.address,
+                village: customerForm.village,
+                pincode: customerForm.pincode,
+                mobile_number: customerForm.mobile_number,
+                email: customerForm.email,
+                aadhaar_number: customerForm.aadhaar_number,
+                pan_number: customerForm.pan_number,
+                age: customerForm.age ? parseInt(customerForm.age) : null,
+                profile_picture: customerForm.profile_picture,
+                profile_photo: customerForm.profile_picture,
+                profilePicture: customerForm.profile_picture,
+                photo: customerForm.profile_picture,
+                avatar: customerForm.profile_picture
+            },
             job_business: { ...jobForm, annual_income: parseFloat(jobForm.annual_income) || 0 },
             medical: { height: parseFloat(medicalForm.height) || 0, weight: parseFloat(medicalForm.weight) || 0 },
             family_members: familyMembers.map(m => ({
-                relation: m.relationship, name: m.fullName, age: parseInt(m.age) || 0, dob: m.dateOfBirth,
-                is_deceased: false, age_at_death: null, reason_of_death: null
+                name: m.fullName,
+                age: parseInt(m.age) || null,
+                dob: m.dateOfBirth || null,
+                is_deceased: false,
+                age_at_death: null,
+                reason_of_death: null
             })),
-            policy: {
-                ...policyForm,
+            policies: [{
+                policy_type: policyForm.policy_type,
+                name: policyForm.name,
+                policy_no: parseInt(policyForm.policy_no) || 0,
+                insurance_number: policyForm.insurance_number,
                 insurance_rate: parseFloat(policyForm.insurance_rate),
                 premium_year: parseInt(policyForm.premium_year),
-                installment_price: parseFloat(policyForm.installment_price)
-            },
-            existing_family_policies: existingPolicies.map(p => ({
-                name: p.name, relation: p.relation, policy_number: p.policyNumber,
-                policy_date: p.policyDate, policy_amount: parseFloat(p.policyAmount) || 0
-            }))
+                maturity_years: parseInt(policyForm.maturity_years),
+                installment_type: policyForm.installment_type,
+                installment_price: parseFloat(policyForm.installment_price),
+                birth_place: policyForm.birth_place,
+                dob: null,
+                age: null,
+                aadhaar_number: null,
+                policy_date: null,
+                policy_amount: null,
+                nominee: {
+                    nominee_name: policyForm.nominee.nominee_name,
+                    relation: policyForm.nominee.relation,
+                    age: parseInt(policyForm.nominee.age) || 0,
+                    pan_number: policyForm.nominee.pan_number
+                }
+            }]
         };
-        onSubmit(payload);
+
+        // Add profile picture to root as well for resilience
+        if (customerForm.profile_picture) {
+            payload.profile_picture = customerForm.profile_picture;
+            payload.profile_photo = customerForm.profile_picture;
+        }
+
+        // Clear persistence storage on successful final submission
+        if (!isEdit) {
+            sessionStorage.removeItem(STORAGE_KEY);
+        }
+
+        onSubmit(payload, selectedFile);
     };
 
     const handleMobileCheck = async () => {
@@ -263,13 +592,23 @@ export default function AddCustomerForm({ onSubmit, onCancel, isProcessing, init
                                 onRemovePhoto={() => handleFormChange(setCustomerForm)('profile_picture', '')}
                                 onMobileBlur={handleMobileCheck}
                                 isCheckingMobile={isCheckingMobile}
+                                isEdit={isEdit}
+                                isUploadingPhoto={false}
+                                renderPdfUpload={() => (
+                                    <div className="mb-6">
+                                        <PdfUploadArea
+                                            onExtract={handlePdfExtract}
+                                            isExtracting={isExtracting}
+                                            token={token}
+                                        />
+                                    </div>
+                                )}
                             />
                         </div>
                     )}
 
                     {currentStep === 2 && (
                         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            <NomineeSection form={nomineeForm} errors={formErrors} onChange={handleFormChange(setNomineeForm)} />
                             <OccupationMedicalSection
                                 jobForm={jobForm}
                                 medicalForm={medicalForm}
@@ -284,7 +623,7 @@ export default function AddCustomerForm({ onSubmit, onCancel, isProcessing, init
                         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <FamilyMembersSection
                                 members={familyMembers}
-                                onAdd={() => setFamilyMembers([...familyMembers, { fullName: '', relationship: '', dateOfBirth: '', gender: 'Male', age: '', aadhaarNumber: '' }])}
+                                onAdd={() => setFamilyMembers([...familyMembers, { fullName: '', dateOfBirth: '', age: '' }])}
                                 onRemove={(idx) => setFamilyMembers(familyMembers.filter((_, i) => i !== idx))}
                                 onChange={(idx, field, val) => {
                                     const updated = [...familyMembers];
@@ -298,28 +637,16 @@ export default function AddCustomerForm({ onSubmit, onCancel, isProcessing, init
                     {currentStep === 4 && (
                         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <PolicyDetailsSection form={policyForm} errors={formErrors} onChange={handleFormChange(setPolicyForm)} />
-                            <ExistingPoliciesSection
-                                policies={existingPolicies}
-                                onAdd={() => setExistingPolicies([...existingPolicies, { name: '', relation: '', policyNumber: '', policyDate: '', policyAmount: '' }])}
-                                onRemove={(idx) => setExistingPolicies(existingPolicies.filter((_, i) => i !== idx))}
-                                onChange={(idx, field, val) => {
-                                    const updated = [...existingPolicies];
-                                    updated[idx] = { ...updated[idx], [field]: val };
-                                    setExistingPolicies(updated);
-                                }}
-                            />
                         </div>
                     )}
 
                     {currentStep === 5 && (
                         <FormReviewStep
                             customerForm={customerForm}
-                            nomineeForm={nomineeForm}
                             jobForm={jobForm}
                             medicalForm={medicalForm}
                             familyMembers={familyMembers}
                             policyForm={policyForm}
-                            existingPolicies={existingPolicies}
                         />
                     )}
                 </div>

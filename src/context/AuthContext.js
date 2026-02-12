@@ -33,10 +33,12 @@ export const AuthProvider = ({ children }) => {
             const data = await apiService.login(email, password);
             console.log('Login API response data:', data);
 
-            // Handle variant token and role field names from API
-            const accessToken = data.token || data.access_token || data.accessToken || data.id_token;
-            const apiRole = data.user_role || data.role || data.userRole;
-            const userName = data.name || data.username || data.email || 'User';
+            // Handle variant token and role field names from API (including unwrapped data)
+            const accessToken = data.token || data.access_token || data.accessToken || data.id_token || data.data?.token;
+            const apiRole = data.user_role || data.role || data.userRole || data.user?.role || data.user?.user_role || data.data?.role;
+            const userName = data.name || data.username || data.email || data.user?.name || data.user?.customer_name || 'User';
+            const userEmail = data.email || data.user?.email || email;
+            const userPhone = data.phone || data.mobile || data.user?.phone || data.user?.mobile || data.user?.mobile_number || 'N/A';
 
             if (!accessToken) {
                 console.error('No token found in response. Available keys:', Object.keys(data));
@@ -47,7 +49,12 @@ export const AuthProvider = ({ children }) => {
             const role = apiRole || selectedRole;
             console.log(`Role Identification - API: ${apiRole}, Selected: ${selectedRole}, Final: ${role}`);
 
-            const userData = { name: userName, role: role };
+            const userData = {
+                name: userName,
+                email: userEmail,
+                phone: userPhone,
+                role: role
+            };
             setToken(accessToken);
             setUser(userData);
 
@@ -65,16 +72,16 @@ export const AuthProvider = ({ children }) => {
             sessionStorage.setItem('login-data', JSON.stringify(data));
 
             // Redirect based on role
-            if (role === 'agent') router.push('/agent-dashboard');
-            else if (role === 'customer') router.push('/customer-dashboard');
+            if (role === 'agent') router.replace('/agent-dashboard');
+            else if (role === 'customer') router.replace('/customer-dashboard');
             else {
                 console.warn(`Unknown role "${role}", defaulting to dashboard fallback or /`);
                 // If we have a role but it doesn't match, maybe casing issue? 
                 // Let's try lowercase check.
                 const normalizedRole = role?.toLowerCase();
-                if (normalizedRole === 'agent') router.push('/agent-dashboard');
-                else if (normalizedRole === 'customer') router.push('/customer-dashboard');
-                else router.push('/');
+                if (normalizedRole === 'agent') router.replace('/agent-dashboard');
+                else if (normalizedRole === 'customer') router.replace('/customer-dashboard');
+                else router.replace('/');
             }
 
             return { success: true };
@@ -100,6 +107,14 @@ export const AuthProvider = ({ children }) => {
         } finally {
             setIsLoading(false);
         }
+    }, []);
+
+    const updateUser = useCallback((newUserData) => {
+        setUser(prev => {
+            const updated = { ...prev, ...newUserData };
+            localStorage.setItem('user-data', JSON.stringify(updated));
+            return updated;
+        });
     }, []);
 
     const logout = useCallback(() => {
@@ -132,6 +147,7 @@ export const AuthProvider = ({ children }) => {
         isLoading,
         login,
         register,
+        updateUser,
         logout
     };
 

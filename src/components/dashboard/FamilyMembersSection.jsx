@@ -33,7 +33,7 @@ export const FamilyMembersSection = ({ members, onAdd, onRemove, onChange }) => 
                         >
                             <X className="w-4 h-4" />
                         </button>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pr-8">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pr-8">
                             <div className="space-y-1.5">
                                 <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider font-paragraph">Full Name</Label>
                                 <Input
@@ -41,15 +41,6 @@ export const FamilyMembersSection = ({ members, onAdd, onRemove, onChange }) => 
                                     onChange={(e) => onChange(index, 'fullName', e.target.value)}
                                     className="h-10 text-sm rounded-lg bg-white border-slate-200"
                                     placeholder="Name"
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider font-paragraph">Relationship</Label>
-                                <Input
-                                    value={member.relationship}
-                                    onChange={(e) => onChange(index, 'relationship', e.target.value)}
-                                    className="h-10 text-sm rounded-lg bg-white border-slate-200"
-                                    placeholder="e.g. Son"
                                 />
                             </div>
                             <div className="space-y-1.5">

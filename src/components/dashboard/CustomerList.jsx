@@ -106,8 +106,16 @@ export const CustomerList = React.memo(({ customers, isLoading, onEdit, onDelete
                         >
                             <div className="flex justify-between items-start mb-1.5 md:mb-2">
                                 <div className="flex items-center gap-2">
-                                    <div className="w-6 h-6 md:w-8 md:h-8 bg-primary/10 rounded-md md:rounded-lg flex items-center justify-center text-primary">
-                                        <Users className="w-3 h-3 md:w-4 md:h-4 text-primary" />
+                                    <div className="w-8 h-8 md:w-10 md:h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary overflow-hidden">
+                                        {customer.profile_picture && customer.profile_picture !== "string" ? (
+                                            <img
+                                                src={customer.profile_picture}
+                                                alt={customer.fullName}
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                                            />
+                                        ) : null}
+                                        <Users className={`w-4 h-4 md:w-5 md:h-5 text-primary ${customer.profile_picture && customer.profile_picture !== "string" ? 'hidden' : 'block'}`} />
                                     </div>
                                     <div className="text-[7px] md:text-[9px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/30 px-1 py-0.5 rounded">
                                         {customer.plan || 'No Plan'}

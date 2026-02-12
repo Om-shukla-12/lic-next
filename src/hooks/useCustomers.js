@@ -2,6 +2,31 @@ import { useState, useCallback, useEffect } from 'react';
 import { apiService } from '@/lib/api-service';
 import { useAuthContext } from '@/context/AuthContext';
 
+const API_ASSET_BASE = 'https://lic-backend-2026.onrender.com';
+
+const normalizeImageUrl = (url) => {
+    if (!url || url === 'string') return '';
+    if (url.includes('res.cloudinary.com/demo/image/upload')) return ''; // Filter out broken demo URLs
+    if (/^https?:\/\//i.test(url) || url.startsWith('data:')) return url;
+    return `${API_ASSET_BASE}${url.startsWith('/') ? '' : '/'}${url}`;
+};
+
+const getProfileImageUrl = (record) => {
+    const url =
+        record?.customer?.profile_picture ||
+        record?.customer?.profile_photo ||
+        record?.customer?.profilePicture ||
+        record?.customer?.photo ||
+        record?.customer?.avatar ||
+        record?.profile_picture ||
+        record?.profile_photo ||
+        record?.profilePicture ||
+        record?.photo ||
+        record?.avatar ||
+        null;
+    return normalizeImageUrl(url);
+};
+
 /**
  * Custom hook to manage customer data and operations
  */
@@ -20,19 +45,30 @@ export const useCustomers = () => {
             // Switch to getMyRecords for agent-specific data
             const apiRecords = await apiService.getMyRecords(token);
 
-            const mappedCustomers = (apiRecords || []).map((record, index) => ({
-                _id: record._id || `api-customer-${index}`,
-                fullName: record.customer?.customer_name || 'Unknown',
-                emailAddress: record.customer?.email || 'N/A',
-                contactNumber: record.customer?.mobile_number || 'N/A',
-                aadhaar_number: record.customer?.aadhaar_number,
-                status: 'Active',
-                plan: record.policy?.insurance_number || 'N/A',
-                premium: record.policy?.installment_price || '0',
-                lastPaid: new Date().toISOString(),
-                // Keep the raw record for editing
-                rawData: record
-            }));
+            const mappedCustomers = (apiRecords || []).map((record, index) => {
+                const photoUrl = getProfileImageUrl(record);
+                return {
+                    _id: record._id || `api-customer-${index}`,
+                    fullName: record.customer?.customer_name || 'Unknown',
+                    emailAddress: record.customer?.email || 'N/A',
+                    contactNumber: record.customer?.mobile_number || 'N/A',
+                    aadhaar_number: record.customer?.aadhaar_number,
+                    status: 'Active',
+                    plan: record.policy?.insurance_number || 'N/A',
+                    premium: record.policy?.installment_price || '0',
+                    lastPaid: new Date().toISOString(),
+                    profile_picture: photoUrl,
+                    // Keep the raw record for editing
+                    rawData: {
+                        ...record,
+                        customer: {
+                            ...(record.customer || {}),
+                            profile_picture: photoUrl || record?.customer?.profile_picture || record?.customer?.profile_photo || '',
+                            profile_photo: photoUrl || record?.customer?.profile_photo || record?.customer?.profile_picture || ''
+                        }
+                    }
+                };
+            });
 
             setCustomers(mappedCustomers);
         } catch (e) {
@@ -59,18 +95,29 @@ export const useCustomers = () => {
             await apiService.registerCustomer(payload, token);
             // Deep refresh
             const apiRecords = await apiService.getMyRecords(token);
-            const mappedCustomers = (apiRecords || []).map((record, index) => ({
-                _id: record._id || `api-customer-${index}`,
-                fullName: record.customer?.customer_name || 'Unknown',
-                emailAddress: record.customer?.email || 'N/A',
-                contactNumber: record.customer?.mobile_number || 'N/A',
-                aadhaar_number: record.customer?.aadhaar_number,
-                status: 'Active',
-                plan: record.policy?.insurance_number || 'N/A',
-                premium: record.policy?.installment_price || '0',
-                lastPaid: new Date().toISOString(),
-                rawData: record
-            }));
+            const mappedCustomers = (apiRecords || []).map((record, index) => {
+                const photoUrl = getProfileImageUrl(record);
+                return {
+                    _id: record._id || `api-customer-${index}`,
+                    fullName: record.customer?.customer_name || 'Unknown',
+                    emailAddress: record.customer?.email || 'N/A',
+                    contactNumber: record.customer?.mobile_number || 'N/A',
+                    aadhaar_number: record.customer?.aadhaar_number,
+                    status: 'Active',
+                    plan: record.policy?.insurance_number || 'N/A',
+                    premium: record.policy?.installment_price || '0',
+                    lastPaid: new Date().toISOString(),
+                    profile_picture: photoUrl,
+                    rawData: {
+                        ...record,
+                        customer: {
+                            ...(record.customer || {}),
+                            profile_picture: photoUrl || record?.customer?.profile_picture || record?.customer?.profile_photo || '',
+                            profile_photo: photoUrl || record?.customer?.profile_photo || record?.customer?.profile_picture || ''
+                        }
+                    }
+                };
+            });
             setCustomers(mappedCustomers);
             return { success: true };
         } catch (e) {
@@ -91,18 +138,29 @@ export const useCustomers = () => {
             // Manual update in state is faster than full reload but full reload is safer for now
             // Just optimizing the flow to not call loadCustomers (which sets loading again)
             const apiRecords = await apiService.getMyRecords(token);
-            const mappedCustomers = (apiRecords || []).map((record, index) => ({
-                _id: record._id || `api-customer-${index}`,
-                fullName: record.customer?.customer_name || 'Unknown',
-                emailAddress: record.customer?.email || 'N/A',
-                contactNumber: record.customer?.mobile_number || 'N/A',
-                aadhaar_number: record.customer?.aadhaar_number,
-                status: 'Active',
-                plan: record.policy?.insurance_number || 'N/A',
-                premium: record.policy?.installment_price || '0',
-                lastPaid: new Date().toISOString(),
-                rawData: record
-            }));
+            const mappedCustomers = (apiRecords || []).map((record, index) => {
+                const photoUrl = getProfileImageUrl(record);
+                return {
+                    _id: record._id || `api-customer-${index}`,
+                    fullName: record.customer?.customer_name || 'Unknown',
+                    emailAddress: record.customer?.email || 'N/A',
+                    contactNumber: record.customer?.mobile_number || 'N/A',
+                    aadhaar_number: record.customer?.aadhaar_number,
+                    status: 'Active',
+                    plan: record.policy?.insurance_number || 'N/A',
+                    premium: record.policy?.installment_price || '0',
+                    lastPaid: new Date().toISOString(),
+                    profile_picture: photoUrl,
+                    rawData: {
+                        ...record,
+                        customer: {
+                            ...(record.customer || {}),
+                            profile_picture: photoUrl || record?.customer?.profile_picture || record?.customer?.profile_photo || '',
+                            profile_photo: photoUrl || record?.customer?.profile_photo || record?.customer?.profile_picture || ''
+                        }
+                    }
+                };
+            });
             setCustomers(mappedCustomers);
             return { success: true };
         } catch (e) {
@@ -153,6 +211,35 @@ export const useCustomers = () => {
         }
     };
 
+    const uploadPhoto = async (customerId, file) => {
+        if (!token) return { success: false, error: "Authentication token missing" };
+        try {
+            const uploadResponse = await apiService.uploadProfilePhoto(customerId, file, token);
+            const photoUrl =
+                (typeof uploadResponse === 'string' ? uploadResponse : null) ||
+                uploadResponse?.profile_picture ||
+                uploadResponse?.profile_photo ||
+                uploadResponse?.photo ||
+                uploadResponse?.url ||
+                uploadResponse?.image_url ||
+                uploadResponse?.secure_url ||
+                uploadResponse?.file_url ||
+                uploadResponse?.location ||
+                uploadResponse?.data?.profile_picture ||
+                uploadResponse?.data?.profile_photo ||
+                uploadResponse?.data?.url ||
+                uploadResponse?.data?.image_url ||
+                uploadResponse?.data?.secure_url ||
+                null;
+
+            return { success: true, photoUrl: normalizeImageUrl(photoUrl), uploadResponse };
+        } catch (e) {
+            console.error("Upload error:", e);
+            if (e.message === 'UNAUTHORIZED') logout();
+            return { success: false, error: e.message };
+        }
+    };
+
     return {
         customers,
         isLoading,
@@ -161,6 +248,7 @@ export const useCustomers = () => {
         registerCustomer,
         updateCustomer,
         deleteCustomer,
+        uploadPhoto,
         downloadPDF
     };
 };

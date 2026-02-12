@@ -5,7 +5,7 @@ export default function Footer() {
   return (
     <footer className="bg-card-background border-t border-muted">
       <div className="max-w-[100rem] mx-auto px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Brand */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
@@ -17,45 +17,6 @@ export default function Footer() {
             <p className="font-paragraph text-sm text-foreground">
               आपकी बीमा पॉलिसी का डिजिटल समाधान। Your trusted digital insurance platform.
             </p>
-          </div>
-
-          {/* Quick Links */}
-          <div>
-            <h3 className="font-heading text-lg text-card-heading mb-4">Quick Links</h3>
-            <ul className="space-y-2">
-              <li>
-                <Link href="/" className="font-paragraph text-sm text-foreground hover:text-primary">
-                  Home
-                </Link>
-              </li>
-              <li>
-                <Link href="/login" className="font-paragraph text-sm text-foreground hover:text-primary">
-                  Login
-                </Link>
-              </li>
-              <li>
-                <Link href="/register" className="font-paragraph text-sm text-foreground hover:text-primary">
-                  Register
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Dashboards */}
-          <div>
-            <h3 className="font-heading text-lg text-card-heading mb-4">Dashboards</h3>
-            <ul className="space-y-2">
-              <li>
-                <Link href="/agent-dashboard" className="font-paragraph text-sm text-foreground hover:text-primary">
-                  Agent Dashboard
-                </Link>
-              </li>
-              <li>
-                <Link href="/customer-dashboard" className="font-paragraph text-sm text-foreground hover:text-primary">
-                  Customer Dashboard
-                </Link>
-              </li>
-            </ul>
           </div>
 
           {/* Contact */}

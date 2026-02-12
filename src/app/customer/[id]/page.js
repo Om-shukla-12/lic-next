@@ -25,6 +25,15 @@ import Footer from '@/components/Footer';
 import { useAuthContext } from '@/context/AuthContext';
 import { apiService } from '@/lib/api-service';
 
+const API_ASSET_BASE = 'https://lic-backend-2026.onrender.com';
+
+const normalizeImageUrl = (url) => {
+    if (!url || url === 'string') return '';
+    if (url.includes('res.cloudinary.com/demo/image/upload')) return ''; // Filter out broken demo URLs
+    if (/^https?:\/\//i.test(url) || url.startsWith('data:')) return url;
+    return `${API_ASSET_BASE}${url.startsWith('/') ? '' : '/'}${url}`;
+};
+
 const maskAadhaar = (val) => {
     if (!val) return '';
     const s = val.toString();
@@ -62,6 +71,21 @@ export default function CustomerDetailPage({ params }) {
         };
         fetchData();
     }, [id, token]);
+
+    const profileImageUrl = normalizeImageUrl(
+        record?.customer?.profile_picture ||
+        record?.customer?.profile_photo ||
+        record?.customer?.profilePicture ||
+        record?.customer?.photo ||
+        record?.customer?.avatar ||
+        record?.profile_picture ||
+        record?.profile_photo ||
+        record?.profilePicture ||
+        record?.photo ||
+        record?.avatar ||
+        ''
+    );
+    const hasProfileImage = profileImageUrl && profileImageUrl !== 'string';
 
     if (isLoading) return (
         <div className="flex items-center justify-center min-h-screen bg-slate-50">
@@ -109,8 +133,8 @@ export default function CustomerDetailPage({ params }) {
                         {/* Photo Column */}
                         <div className="flex-shrink-0 mx-auto md:mx-0">
                             <div className="w-48 h-48 rounded-2xl overflow-hidden shadow-lg border-4 border-slate-50 bg-slate-100 flex items-center justify-center">
-                                {record.customer?.profile_picture ? (
-                                    <img src={record.customer.profile_picture} alt="Profile" className="w-full h-full object-cover" />
+                                {hasProfileImage ? (
+                                    <img src={profileImageUrl} alt="Profile" className="w-full h-full object-cover" />
                                 ) : (
                                     <User className="w-20 h-20 text-slate-300" />
                                 )}
@@ -240,6 +264,14 @@ export default function CustomerDetailPage({ params }) {
 
                 </div>
             </main>
+            <div className="bg-slate-100 p-8 mt-12 mb-12 rounded-xl">
+                <details>
+                    <summary className="font-bold text-slate-500 cursor-pointer mb-4">Debug: Raw Record Data (Click to Expand)</summary>
+                    <pre className="text-xs bg-slate-800 text-green-400 p-4 rounded-lg overflow-auto max-h-96">
+                        {JSON.stringify(record, null, 2)}
+                    </pre>
+                </details>
+            </div>
             <Footer />
         </div>
     );

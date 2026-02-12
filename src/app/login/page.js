@@ -24,6 +24,9 @@ export default function LoginPage() {
         setRole(selectedRole);
         setStep('credentials');
         setError(null);
+        // Prefetch relevant dashboard for zero-delay navigation
+        if (selectedRole === 'agent') router.prefetch('/agent-dashboard');
+        else if (selectedRole === 'customer') router.prefetch('/customer-dashboard');
     };
 
     const handleSubmit = async (e) => {
@@ -32,15 +35,10 @@ export default function LoginPage() {
 
         const result = await login(details.email, details.password, role);
 
-        if (result.success) {
-            // Use the selected role or the role returned by the server
-            const finalRole = result.user?.role || role;
-            if (finalRole === 'agent') router.push('/agent-dashboard');
-            else if (finalRole === 'customer') router.push('/customer-dashboard');
-            else router.push('/');
-        } else {
+        if (!result.success) {
             setError(result.error || 'Login failed. Please check your credentials.');
         }
+        // REDIRECT is now handled centrally in AuthContext to avoid race conditions and redundant push calls
     };
 
     return (

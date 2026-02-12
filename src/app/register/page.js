@@ -41,9 +41,8 @@ export default function RegisterPage() {
         const payload = {
             name: details.name,
             email: details.email,
-            phone: details.phone,
-            password: details.password,
-            user_role: role
+            mobile: details.phone,
+            password: details.password
         };
 
         const result = await register(payload);

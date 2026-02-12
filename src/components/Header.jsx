@@ -45,6 +45,26 @@ export default function Header() {
               </Link>
             )}
 
+            {isAuthenticated && user?.role === 'agent' && (
+              <Link
+                href="/agent-dashboard/birthdays"
+                className={`font-paragraph text-base ${isActive('/agent-dashboard/birthdays') ? 'text-primary font-semibold' : 'text-foreground hover:text-primary'
+                  }`}
+              >
+                Birthdays
+              </Link>
+            )}
+
+            {isAuthenticated && user?.role === 'agent' && (
+              <Link
+                href="/subscription"
+                className={`font-paragraph text-base ${isActive('/subscription') ? 'text-primary font-semibold' : 'text-foreground hover:text-primary'
+                  }`}
+              >
+                Subscription
+              </Link>
+            )}
+
             {isAuthenticated && user?.role === 'customer' && (
               <Link
                 href="/customer-dashboard"
@@ -103,77 +123,100 @@ export default function Header() {
           </button>
         </div>
 
-        {/* Mobile Navigation */}
+        {/* Mobile Navigation Overlay */}
         {mobileMenuOpen && (
-          <nav className="md:hidden mt-4 pb-4 space-y-4">
-            {/* <Link
-              href="/"
+          <>
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] md:hidden"
               onClick={() => setMobileMenuOpen(false)}
-              className={`block font-paragraph text-base ${isActive('/') ? 'text-primary font-semibold' : 'text-foreground'
-                }`}
-            >
-              Home
-            </Link> */}
-
-            {isAuthenticated && user?.role === 'agent' && (
-              <Link
-                href="/agent-dashboard"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`block font-paragraph text-base ${isActive('/agent-dashboard') ? 'text-primary font-semibold' : 'text-foreground'
-                  }`}
-              >
-                Agent Dashboard
-              </Link>
-            )}
-
-            {isAuthenticated && user?.role === 'customer' && (
-              <Link
-                href="/customer-dashboard"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`block font-paragraph text-base ${isActive('/customer-dashboard') ? 'text-primary font-semibold' : 'text-foreground'
-                  }`}
-              >
-                Customer Dashboard
-              </Link>
-            )}
-
-
-
-            {isAuthenticated && (
-              <Link
-                href="/profile"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`block font-paragraph text-base ${isActive('/profile') ? 'text-primary font-semibold' : 'text-foreground'
-                  }`}
-              >
-                Profile
-              </Link>
-            )}
-
-            {isAuthenticated ? (
-              <div className="pt-4 border-t border-muted">
-                <div className="flex items-center gap-2 mb-4 px-2">
-                  <User className="w-5 h-5 text-primary" />
-                  <span className="font-medium text-foreground">{user.name}</span>
-                </div>
-                <Button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    logout();
-                  }}
-                  className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-lg px-4 py-2 font-semibold h-auto"
+            />
+            {/* Menu Panel */}
+            <nav className="fixed right-4 top-20 left-4 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 p-6 space-y-4 z-[70] md:hidden animate-in fade-in zoom-in duration-200 origin-top-right">
+              {isAuthenticated && user?.role === 'agent' && (
+                <Link
+                  href="/agent-dashboard"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block font-paragraph text-lg py-1 border-b border-muted/5 ${isActive('/agent-dashboard') ? 'text-primary font-bold' : 'text-foreground'
+                    }`}
                 >
-                  Logout
-                </Button>
-              </div>
-            ) : (
-              <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
-                <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg px-4 py-2 font-semibold h-auto">
-                  Login
-                </Button>
-              </Link>
-            )}
-          </nav>
+                  Agent Dashboard
+                </Link>
+              )}
+
+              {isAuthenticated && user?.role === 'agent' && (
+                <Link
+                  href="/agent-dashboard/birthdays"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block font-paragraph text-lg py-1 border-b border-muted/5 ${isActive('/agent-dashboard/birthdays') ? 'text-primary font-bold' : 'text-foreground'
+                    }`}
+                >
+                  Birthdays
+                </Link>
+              )}
+
+              {isAuthenticated && user?.role === 'agent' && (
+                <Link
+                  href="/subscription"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block font-paragraph text-lg py-1 border-b border-muted/5 ${isActive('/subscription') ? 'text-primary font-bold' : 'text-foreground'
+                    }`}
+                >
+                  Subscription
+                </Link>
+              )}
+
+              {isAuthenticated && user?.role === 'customer' && (
+                <Link
+                  href="/customer-dashboard"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block font-paragraph text-lg py-1 border-b border-muted/5 ${isActive('/customer-dashboard') ? 'text-primary font-bold' : 'text-foreground'
+                    }`}
+                >
+                  Customer Dashboard
+                </Link>
+              )}
+
+              {isAuthenticated && (
+                <Link
+                  href="/profile"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block font-paragraph text-lg py-1 border-b border-muted/5 ${isActive('/profile') ? 'text-primary font-bold' : 'text-foreground'
+                    }`}
+                >
+                  Profile
+                </Link>
+              )}
+
+              {isAuthenticated ? (
+                <div className="pt-2">
+                  <div className="flex items-center gap-3 mb-6 bg-primary/5 p-3 rounded-xl border border-primary/10">
+                    <User className="w-6 h-6 text-primary" />
+                    <div>
+                      <p className="text-[10px] uppercase tracking-widest text-primary/60 font-bold">Logged in as</p>
+                      <p className="font-bold text-foreground">{user.name}</p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      logout();
+                    }}
+                    variant="outline"
+                    className="w-full border-red-500 text-red-500 hover:bg-red-50 rounded-full py-6 font-bold text-base shadow-sm group"
+                  >
+                    Logout
+                  </Button>
+                </div>
+              ) : (
+                <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="block pt-2">
+                  <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-full py-6 font-bold text-base shadow-lg">
+                    Login Now
+                  </Button>
+                </Link>
+              )}
+            </nav>
+          </>
         )}
       </div>
     </header>

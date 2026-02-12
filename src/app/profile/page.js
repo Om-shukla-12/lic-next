@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
-import { User, Mail, Shield, Save, Loader2, ArrowLeft, Pencil, X } from 'lucide-react';
+import { User, Mail, Shield, Save, Loader2, ArrowLeft, Pencil, X, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { useProfile } from '@/hooks/useProfile';
 import { useAuthContext } from '@/context/AuthContext';
@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 export default function ProfilePage() {
     const { profile, isLoading, updateProfile, error } = useProfile();
     const { user: authUser } = useAuthContext();
+    const API_ASSET_BASE = 'https://lic-backend-2026.onrender.com';
 
     const getDashboardPath = () => {
         if (!authUser) return '/login';
@@ -28,15 +29,41 @@ export default function ProfilePage() {
         mobile: '',
         role: ''
     });
+    const [errors, setErrors] = useState({});
     const [isSaving, setIsSaving] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [selectedPhotoFile, setSelectedPhotoFile] = useState(null);
+    const [previewPhotoUrl, setPreviewPhotoUrl] = useState('');
+
+    const normalizeImageUrl = (url) => {
+        if (!url || url === 'string') return '';
+        if (url.includes('res.cloudinary.com/demo/image/upload')) return ''; // Filter out broken demo URLs
+        if (/^https?:\/\//i.test(url) || url.startsWith('data:')) return url;
+        return `${API_ASSET_BASE}${url.startsWith('/') ? '' : '/'}${url}`;
+    };
+
+    const profileImageUrl =
+        previewPhotoUrl ||
+        normalizeImageUrl(
+            profile?.profile_picture ||
+            profile?.profile_photo ||
+            profile?.profilePicture ||
+            profile?.photo ||
+            profile?.avatar ||
+            authUser?.profile_picture ||
+            authUser?.profile_photo ||
+            authUser?.profilePicture ||
+            authUser?.photo ||
+            authUser?.avatar ||
+            ''
+        );
 
     useEffect(() => {
         if (profile) {
             setFormData({
-                name: profile.name || profile.fullName || '',
-                email: profile.email || '',
-                mobile: profile.mobile || profile.contactNumber || '',
+                name: profile.name || profile.fullName || profile.customer_name || '',
+                email: profile.email || profile.emailAddress || '',
+                mobile: profile.mobile || profile.contactNumber || profile.phone || profile.mobile_number || '',
                 role: profile.role || ''
             });
         }
@@ -46,27 +73,66 @@ export default function ProfilePage() {
 
     const handleCancel = () => {
         setIsEditing(false);
+        setSelectedPhotoFile(null);
+        setPreviewPhotoUrl('');
         // Reset to original data
         if (profile) {
             setFormData({
-                name: profile.name || profile.fullName || '',
-                email: profile.email || '',
-                mobile: profile.mobile || profile.contactNumber || '',
+                name: profile.name || profile.fullName || profile.customer_name || '',
+                email: profile.email || profile.emailAddress || '',
+                mobile: profile.mobile || profile.contactNumber || profile.phone || profile.mobile_number || '',
                 role: profile.role || ''
             });
         }
     };
 
+    const handlePhotoChange = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setSelectedPhotoFile(file);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setPreviewPhotoUrl(typeof reader.result === 'string' ? reader.result : '');
+        };
+        reader.readAsDataURL(file);
+    };
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+        // Clear error when field changes
+        if (errors[name]) {
+            setErrors(prev => {
+                const newErrors = { ...prev };
+                delete newErrors[name];
+                return newErrors;
+            });
+        }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setErrors({});
+
+        // Validation: Name must be at least 3 characters
+        if (formData.name.trim().length < 3) {
+            setErrors({ name: "Full Name must be at least 3 characters long." });
+            toast({
+                title: "Validation Error",
+                description: "Please check the form for errors.",
+                variant: "destructive",
+            });
+            return;
+        }
+
         setIsSaving(true);
 
-        const result = await updateProfile(formData);
+        const payload = {
+            name: formData.name,
+            mobile: formData.mobile
+        };
+
+        const result = await updateProfile(payload, selectedPhotoFile);
 
         if (result.success) {
             toast({
@@ -75,6 +141,8 @@ export default function ProfilePage() {
                 variant: "success",
             });
             setIsEditing(false); // Stop editing after save
+            setSelectedPhotoFile(null);
+            setPreviewPhotoUrl('');
         } else {
             toast({
                 title: "Update Failed",
@@ -128,9 +196,33 @@ export default function ProfilePage() {
                     {/* Profile Card */}
                     <div className="md:col-span-1">
                         <div className="bg-card rounded-2xl shadow-premium border border-muted/20 p-8 text-center sticky top-24">
-                            <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center text-primary mx-auto mb-4">
-                                <User className="w-12 h-12" />
+                            <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center text-primary mx-auto mb-4 overflow-hidden">
+                                {profileImageUrl ? (
+                                    <img src={profileImageUrl} alt="Profile" className="w-full h-full object-cover" />
+                                ) : (
+                                    <User className="w-12 h-12" />
+                                )}
                             </div>
+                            {isEditing && (
+                                <div className="mb-4">
+                                    <input
+                                        type="file"
+                                        id="agent-profile-photo-upload"
+                                        className="hidden"
+                                        accept="image/*"
+                                        onChange={handlePhotoChange}
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="rounded-lg text-xs"
+                                        onClick={() => document.getElementById('agent-profile-photo-upload')?.click()}
+                                    >
+                                        <Upload className="w-3 h-3 mr-2" />
+                                        Update Profile Photo
+                                    </Button>
+                                </div>
+                            )}
                             <h2 className="font-heading text-xl font-bold text-card-heading mb-1">{formData.name || 'User'}</h2>
                             <p className="font-paragraph text-sm text-muted-foreground mb-4 uppercase tracking-widest">{formData.role}</p>
 
@@ -162,10 +254,11 @@ export default function ProfilePage() {
                                             value={formData.name}
                                             onChange={handleChange}
                                             disabled={!isEditing}
-                                            className={`w-full bg-upload-area-background border border-upload-area-border rounded-xl px-4 py-3 focus:border-primary outline-none transition-all font-paragraph ${!isEditing ? 'opacity-70 cursor-not-allowed' : ''}`}
+                                            className={`w-full bg-upload-area-background border ${errors.name ? 'border-destructive/60 bg-destructive/5' : 'border-upload-area-border'} rounded-xl px-4 py-3 focus:border-primary outline-none transition-all font-paragraph ${!isEditing ? 'opacity-70 cursor-not-allowed' : ''}`}
                                             placeholder="Your full name"
                                             required
                                         />
+                                        {errors.name && <p className="text-destructive text-[10px] font-bold mt-1 flex items-center gap-1 uppercase tracking-wider">● {errors.name}</p>}
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Email Address</label>

@@ -23,7 +23,7 @@ export default function AllCustomersPage() {
     useNavigationGuard(authorized);
 
     const { toast } = useToast();
-    const { customers, isLoading, updateCustomer, deleteCustomer, downloadPDF } = useCustomers();
+    const { customers, isLoading, updateCustomer, deleteCustomer, downloadPDF, uploadPhoto } = useCustomers();
 
     const handleEditCustomer = useCallback((customer) => {
         setEditingCustomer(customer);
@@ -33,16 +33,50 @@ export default function AllCustomersPage() {
         setEditingCustomer(null);
     }, []);
 
-    const handleUpdateSubmit = useCallback(async (formData) => {
+    const handleUpdateSubmit = useCallback(async (formData, profilePhotoFile) => {
         if (!editingCustomer) return;
-        const result = await updateCustomer(editingCustomer._id, formData);
+
+        let finalFormData = { ...formData };
+        let photoUploadSuccess = true;
+
+        // 1. If there is a new photo file, upload it FIRST to get the URL
+        if (profilePhotoFile) {
+            try {
+                const uploadResult = await uploadPhoto(editingCustomer._id, profilePhotoFile);
+                if (uploadResult.success && uploadResult.photoUrl) {
+                    // Update formData with the new photo URL to ensure persistence
+                    finalFormData.customer = {
+                        ...finalFormData.customer,
+                        profile_picture: uploadResult.photoUrl,
+                        profile_photo: uploadResult.photoUrl
+                    };
+                    // Also update at root level if your API expects it there
+                    finalFormData.profile_picture = uploadResult.photoUrl;
+                } else {
+                    console.error("Photo upload failed:", uploadResult.error);
+                    toast({ title: "Photo Upload Failed", description: "Proceeding with text update only.", variant: "destructive" });
+                    photoUploadSuccess = false;
+                }
+            } catch (err) {
+                console.error("Photo upload error:", err);
+                photoUploadSuccess = false;
+            }
+        }
+
+        // 2. Update customer data (now including the photo URL if upload succeeded)
+        const result = await updateCustomer(editingCustomer._id, finalFormData);
+
         if (result.success) {
-            toast({ title: "Customer Updated", variant: "default" });
+            toast({
+                title: "Customer Updated",
+                description: photoUploadSuccess ? "Details and photo saved successfully." : "Details saved, but photo upload failed.",
+                variant: "default"
+            });
             setEditingCustomer(null);
         } else {
             toast({ title: "Update Failed", description: result.error, variant: "destructive" });
         }
-    }, [editingCustomer, updateCustomer, toast]);
+    }, [editingCustomer, updateCustomer, uploadPhoto, toast]);
 
     const handleDeleteCustomer = useCallback(async (customerId) => {
         const result = await deleteCustomer(customerId);
@@ -141,6 +175,7 @@ export default function AllCustomersPage() {
                         <div className="p-4 md:p-6">
                             <AddCustomerForm
                                 initialData={editingCustomer.rawData}
+                                customerId={editingCustomer._id}
                                 onSubmit={handleUpdateSubmit}
                                 onCancel={handleCancelEdit}
                                 isProcessing={isLoading}

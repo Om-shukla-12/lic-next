@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, Cake } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useAuth } from '@/hooks/useAuth';
 import { useCustomers } from '@/hooks/useCustomers';
@@ -96,7 +96,17 @@ export default function AgentDashboardPage() {
     const handleCancelForm = useCallback(() => {
         setShowAddCustomer(false);
         setEditingCustomer(null);
+        // Also clear any persisted draft when manually canceling
+        sessionStorage.removeItem('lic_add_customer_form');
     }, []);
+
+    // Persist form visibility if a draft exists
+    useEffect(() => {
+        const savedData = sessionStorage.getItem('lic_add_customer_form');
+        if (savedData && !editingCustomer) {
+            setShowAddCustomer(true);
+        }
+    }, [editingCustomer]);
 
     const handleDownloadPDF = useCallback(async (customerId, customerName) => {
         const result = await downloadPDF(customerId, customerName);
@@ -139,8 +149,8 @@ export default function AgentDashboardPage() {
                         planCount={0}
                     />
 
-                    {/* Add New Customer Button */}
-                    <div className="mb-2 md:mb-4 flex gap-4">
+                    {/* Main Actions */}
+                    <div className="mb-2 md:mb-4 flex flex-wrap gap-3 md:gap-4">
                         <Button
                             onClick={() => {
                                 if (showAddCustomer) {
@@ -149,10 +159,18 @@ export default function AgentDashboardPage() {
                                     setShowAddCustomer(true);
                                 }
                             }}
-                            className={`${showAddCustomer ? 'bg-muted text-muted-foreground' : 'bg-primary text-primary-foreground'} hover:opacity-90 rounded-full px-4 md:px-8 py-2 md:py-4 font-bold text-sm md:text-lg h-auto shadow-lg transition-all hover:scale-105`}
+                            className={`${showAddCustomer ? 'bg-muted text-muted-foreground' : 'bg-primary text-primary-foreground'} hover:opacity-90 rounded-full px-5 md:px-8 py-2 md:py-4 font-bold text-sm md:text-lg h-auto shadow-lg transition-all hover:scale-105 flex items-center gap-2`}
                         >
-                            {showAddCustomer ? <X className="w-4 h-4 md:w-6 md:h-6 mr-1 md:mr-2" /> : <Plus className="w-4 h-4 md:w-6 md:h-6 mr-1 md:mr-2" />}
+                            {showAddCustomer ? <X className="w-4 h-4 md:w-6 md:h-6" /> : <Plus className="w-4 h-4 md:w-6 md:h-6" />}
                             {showAddCustomer ? 'Cancel' : 'Add New Customer'}
+                        </Button>
+
+                        <Button
+                            onClick={() => router.push('/agent-dashboard/birthdays')}
+                            className="bg-white text-blue-600 border-2 border-blue-600/10 hover:bg-blue-50 rounded-full px-5 md:px-8 py-2 md:py-4 font-bold text-sm md:text-lg h-auto shadow-lg transition-all hover:scale-105 flex items-center gap-2"
+                        >
+                            <Cake className="w-4 h-4 md:w-6 md:h-6" />
+                            Birthdays
                         </Button>
                     </div>
 

@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Upload, X, Camera, Image as ImageIcon, User } from 'lucide-react';
 
-export const PersonalDetailsSection = ({ form, errors, onChange, onFileChange, onRemovePhoto, onMobileBlur, isCheckingMobile }) => {
+export const PersonalDetailsSection = ({ form, errors, onChange, onFileChange, onRemovePhoto, onMobileBlur, isCheckingMobile, renderPdfUpload, isEdit, isUploadingPhoto }) => {
     return (
         <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
             {/* Form Header */}
@@ -18,19 +18,26 @@ export const PersonalDetailsSection = ({ form, errors, onChange, onFileChange, o
             </div>
 
             <div className="p-4 md:p-6 space-y-6">
+                {/* PDF Upload Quick Fill - Slot */}
+                {renderPdfUpload && renderPdfUpload()}
+
                 {/* Profile Picture Upload - Compact */}
                 <div className="flex items-center gap-6 p-4 bg-slate-50 rounded-xl border border-slate-200">
                     <div className="relative w-20 h-20 md:w-24 md:h-24 rounded-xl border-2 border-dashed border-slate-300 bg-white overflow-hidden flex items-center justify-center shrink-0">
-                        {form.profile_picture ? (
+                        {isUploadingPhoto ? (
+                            <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                        ) : form.profile_picture ? (
                             <>
                                 <img src={form.profile_picture} alt="Preview" className="w-full h-full object-cover" />
-                                <button
-                                    type="button"
-                                    onClick={onRemovePhoto}
-                                    className="absolute top-0.5 right-0.5 bg-destructive/90 text-destructive-foreground p-1 rounded-md"
-                                >
-                                    <X className="w-3 h-3" />
-                                </button>
+                                {isEdit && (
+                                    <button
+                                        type="button"
+                                        onClick={onRemovePhoto}
+                                        className="absolute top-0.5 right-0.5 bg-destructive/90 text-destructive-foreground p-1 rounded-md"
+                                    >
+                                        <X className="w-3 h-3" />
+                                    </button>
+                                )}
                             </>
                         ) : (
                             <div className="text-center">
@@ -40,26 +47,35 @@ export const PersonalDetailsSection = ({ form, errors, onChange, onFileChange, o
                     </div>
                     <div className="flex flex-col gap-2 w-full">
                         <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Profile Photo</p>
-                        <div className="flex flex-wrap gap-2">
-                            <input type="file" id="photo-upload" className="hidden" accept="image/*" onChange={onFileChange} />
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="h-8 text-xs rounded-lg flex items-center gap-1.5 px-3 border-slate-200"
-                                onClick={() => document.getElementById('photo-upload').click()}
-                            >
-                                <Upload className="w-3 h-3" /> Upload
-                            </Button>
-                            <input type="file" id="camera-capture" className="hidden" accept="image/*" capture="user" onChange={onFileChange} />
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="h-8 text-xs rounded-lg flex items-center gap-1.5 px-3 border-slate-200"
-                                onClick={() => document.getElementById('camera-capture').click()}
-                            >
-                                <Camera className="w-3 h-3" /> Take Photo
-                            </Button>
-                        </div>
+
+                        {isEdit ? (
+                            <div className="flex flex-wrap gap-2">
+                                <input type="file" id="photo-upload" className="hidden" accept="image/*" onChange={onFileChange} disabled={isUploadingPhoto} />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="h-8 text-xs rounded-lg flex items-center gap-1.5 px-3 border-slate-200"
+                                    onClick={() => document.getElementById('photo-upload').click()}
+                                    disabled={isUploadingPhoto}
+                                >
+                                    <Upload className="w-3 h-3" /> {isUploadingPhoto ? 'Uploading...' : 'Upload'}
+                                </Button>
+                                <input type="file" id="camera-capture" className="hidden" accept="image/*" capture="user" onChange={onFileChange} disabled={isUploadingPhoto} />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="h-8 text-xs rounded-lg flex items-center gap-1.5 px-3 border-slate-200"
+                                    onClick={() => document.getElementById('camera-capture').click()}
+                                    disabled={isUploadingPhoto}
+                                >
+                                    <Camera className="w-3 h-3" /> Take Photo
+                                </Button>
+                            </div>
+                        ) : (
+                            <p className="text-xs text-slate-400 italic">
+                                Profile photo can only be uploaded after creating the customer record.
+                            </p>
+                        )}
                     </div>
                 </div>
 
@@ -179,6 +195,29 @@ export const PersonalDetailsSection = ({ form, errors, onChange, onFileChange, o
                             id="spouse_name"
                             value={form.spouse_name}
                             onChange={(e) => onChange('spouse_name', e.target.value)}
+                            className="h-11 rounded-lg border-slate-200"
+                        />
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <Label htmlFor="spouse_relation" className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Spouse Relation</Label>
+                        <Input
+                            id="spouse_relation"
+                            placeholder="e.g., Husband, Wife"
+                            value={form.spouse_relation}
+                            onChange={(e) => onChange('spouse_relation', e.target.value)}
+                            className="h-11 rounded-lg border-slate-200"
+                        />
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <Label htmlFor="age" className="text-xs font-bold text-slate-500 uppercase tracking-wider">Age</Label>
+                        <Input
+                            id="age"
+                            type="number"
+                            placeholder="Auto-calculated from DOB"
+                            value={form.age}
+                            onChange={(e) => onChange('age', e.target.value ? parseInt(e.target.value) : '')}
                             className="h-11 rounded-lg border-slate-200"
                         />
                     </div>
