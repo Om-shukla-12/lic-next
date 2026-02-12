@@ -132,11 +132,11 @@ export default function AgentDashboardPage() {
             <Header />
 
             <main className="flex-1">
-                <section className="bg-primary text-primary-foreground py-3 md:py-5 shadow-inner relative overflow-hidden">
+                <section className="bg-primary text-primary-foreground py-2 md:py-4 shadow-inner relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
                     <div className="max-w-[100rem] mx-auto px-4 relative z-10">
-                        <h1 className="font-heading text-2xl md:text-5xl font-bold mb-1 md:mb-3 tracking-tight">Agent Dashboard</h1>
-                        <p className="font-paragraph text-sm md:text-xl opacity-80 max-w-2xl">
+                        <h1 className="font-heading text-xl md:text-3xl font-bold mb-1 md:mb-2 tracking-tight">Agent Dashboard</h1>
+                        <p className="font-paragraph text-xs md:text-base opacity-80 max-w-2xl">
                             एजेंट डैशबोर्ड। Manage your customers and policies in one place.
                         </p>
                     </div>
@@ -150,7 +150,7 @@ export default function AgentDashboardPage() {
                     />
 
                     {/* Main Actions */}
-                    <div className="mb-2 md:mb-4 flex flex-wrap gap-3 md:gap-4">
+                    <div className="mb-2 md:mb-3 flex flex-wrap gap-2 md:gap-3">
                         <Button
                             onClick={() => {
                                 if (showAddCustomer) {
@@ -159,17 +159,17 @@ export default function AgentDashboardPage() {
                                     setShowAddCustomer(true);
                                 }
                             }}
-                            className={`${showAddCustomer ? 'bg-muted text-muted-foreground' : 'bg-primary text-primary-foreground'} hover:opacity-90 rounded-full px-5 md:px-8 py-2 md:py-4 font-bold text-sm md:text-lg h-auto shadow-lg transition-all hover:scale-105 flex items-center gap-2`}
+                            className={`${showAddCustomer ? 'bg-muted text-muted-foreground' : 'bg-primary text-primary-foreground'} hover:opacity-90 rounded-full px-4 md:px-6 py-2 md:py-3 font-bold text-xs md:text-sm h-auto shadow-lg transition-all hover:scale-105 flex items-center gap-2`}
                         >
-                            {showAddCustomer ? <X className="w-4 h-4 md:w-6 md:h-6" /> : <Plus className="w-4 h-4 md:w-6 md:h-6" />}
+                            {showAddCustomer ? <X className="w-4 h-4 md:w-5 md:h-5" /> : <Plus className="w-4 h-4 md:w-5 md:h-5" />}
                             {showAddCustomer ? 'Cancel' : 'Add New Customer'}
                         </Button>
 
                         <Button
                             onClick={() => router.push('/agent-dashboard/birthdays')}
-                            className="bg-white text-blue-600 border-2 border-blue-600/10 hover:bg-blue-50 rounded-full px-5 md:px-8 py-2 md:py-4 font-bold text-sm md:text-lg h-auto shadow-lg transition-all hover:scale-105 flex items-center gap-2"
+                            className="bg-white text-blue-600 border-2 border-blue-600/10 hover:bg-blue-50 rounded-full px-4 md:px-6 py-2 md:py-3 font-bold text-xs md:text-sm h-auto shadow-lg transition-all hover:scale-105 flex items-center gap-2"
                         >
-                            <Cake className="w-4 h-4 md:w-6 md:h-6" />
+                            <Cake className="w-4 h-4 md:w-5 md:h-5" />
                             Birthdays
                         </Button>
                     </div>
@@ -187,21 +187,21 @@ export default function AgentDashboardPage() {
                     )}
 
                     {/* Customer Records Section */}
-                    <div className="bg-card-background rounded-xl md:rounded-2xl shadow-md p-4 md:p-8">
-                        <div className="flex justify-between items-center mb-4 md:mb-6">
+                    <div className="bg-card-background rounded-xl md:rounded-2xl shadow-md p-3 md:p-5">
+                        <div className="flex justify-between items-center mb-3 md:mb-4">
                             <div className="flex flex-col">
-                                <h2 className="font-heading text-xl md:text-2xl text-card-heading">Recent Customers</h2>
+                                <h2 className="font-heading text-lg md:text-xl text-card-heading">Recent Customers</h2>
                                 <p className="text-[10px] md:text-xs text-muted-foreground mt-0.5">Showing last 5 records</p>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <div className="hidden sm:block text-[10px] md:text-sm font-medium text-muted-foreground bg-muted/20 px-2 md:px-4 py-1 md:py-2 rounded-full">
+                            <div className="flex items-center gap-2">
+                                <div className="hidden sm:block text-[10px] md:text-xs font-medium text-muted-foreground bg-muted/20 px-2 md:px-3 py-1 rounded-full">
                                     {customers.length} Total
                                 </div>
                                 <Button
                                     variant="outline"
                                     size="sm"
                                     onClick={() => router.push('/agent-dashboard/customers')}
-                                    className="text-[10px] md:text-xs font-bold border-primary/20 text-primary hover:bg-primary/5"
+                                    className="text-[10px] md:text-xs font-bold border-primary/20 text-primary hover:bg-primary/5 h-7 md:h-8"
                                 >
                                     See All
                                 </Button>

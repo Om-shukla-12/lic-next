@@ -165,7 +165,7 @@ export default function ProfilePage() {
         <div className="min-h-screen bg-background flex flex-col">
             <Header />
 
-            <main className="flex-1 max-w-4xl mx-auto w-full px-8 py-12">
+            <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-6 md:px-8 md:py-12">
                 <div className="mb-6">
                     <Link
                         href={getDashboardPath()}
@@ -176,9 +176,9 @@ export default function ProfilePage() {
                     </Link>
                 </div>
 
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 md:mb-10">
                     <div>
-                        <h1 className="font-heading text-4xl font-bold text-foreground mb-2">My Profile</h1>
+                        <h1 className="font-heading text-2xl md:text-4xl font-bold text-foreground mb-1 md:mb-2">My Profile</h1>
                         <p className="font-paragraph text-muted-foreground">Manage your personal information and account settings.</p>
                     </div>
                     {!isEditing && (
@@ -192,10 +192,10 @@ export default function ProfilePage() {
                     )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
                     {/* Profile Card */}
                     <div className="md:col-span-1">
-                        <div className="bg-card rounded-2xl shadow-premium border border-muted/20 p-8 text-center sticky top-24">
+                        <div className="bg-card rounded-2xl shadow-premium border border-muted/20 p-6 md:p-8 text-center sticky top-24">
                             <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center text-primary mx-auto mb-4 overflow-hidden">
                                 {profileImageUrl ? (
                                     <img src={profileImageUrl} alt="Profile" className="w-full h-full object-cover" />
@@ -241,7 +241,7 @@ export default function ProfilePage() {
 
                     {/* Profile Form */}
                     <div className="md:col-span-2">
-                        <div className="bg-card-background rounded-2xl shadow-md p-8">
+                        <div className="bg-card-background rounded-2xl shadow-md p-6 md:p-8">
                             <h3 className="font-heading text-2xl text-card-heading mb-8">Personal Information</h3>
 
                             <form onSubmit={handleSubmit} className="space-y-6">
@@ -299,12 +299,12 @@ export default function ProfilePage() {
                                     </div>
                                 </div>
 
-                                <div className={`pt-6 border-t border-muted/20 flex justify-end gap-3 transition-all duration-300 ${isEditing ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden pt-0'}`}>
+                                <div className={`pt-6 border-t border-muted/20 flex flex-col-reverse md:flex-row justify-end gap-3 transition-all duration-300 ${isEditing ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden pt-0'}`}>
                                     <Button
                                         type="button"
                                         variant="outline"
                                         onClick={handleCancel}
-                                        className="rounded-xl px-6"
+                                        className="rounded-xl px-6 w-full md:w-auto"
                                     >
                                         <X className="w-4 h-4 mr-2" />
                                         Cancel
@@ -312,7 +312,7 @@ export default function ProfilePage() {
                                     <Button
                                         type="submit"
                                         disabled={isSaving}
-                                        className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-8 py-3 font-bold shadow-lg shadow-primary/20 transition-all active:scale-95"
+                                        className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-8 py-3 font-bold shadow-lg shadow-primary/20 transition-all active:scale-95 w-full md:w-auto"
                                     >
                                         {isSaving ? (
                                             <>

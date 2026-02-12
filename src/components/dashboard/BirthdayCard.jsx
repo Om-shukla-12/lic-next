@@ -57,72 +57,72 @@ export const BirthdayCard = ({ person, isToday }) => {
     const theme = isToday ? THEMES[4] : THEMES[themeIndex]; // Keep Blue for Today, or mix it up
 
     return (
-        <div className={`relative group overflow-hidden rounded-3xl border transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 ${theme.bg
+        <div className={`relative group overflow-hidden rounded-2xl border transition-all duration-500 hover:shadow-xl hover:-translate-y-1 ${theme.bg
             } ${theme.border} ${theme.shadow}`}>
 
             {/* Background Decoration */}
-            <div className={`absolute -right-6 -top-6 opacity-5 group-hover:scale-125 group-hover:opacity-10 transition-all duration-700`}>
-                <Cake className={`w-32 h-32 ${theme.text}`} />
+            <div className={`absolute -right-4 -top-4 opacity-5 group-hover:scale-125 group-hover:opacity-10 transition-all duration-700`}>
+                <Cake className={`w-24 h-24 ${theme.text}`} />
             </div>
 
-            <div className="p-6 flex flex-col h-full relative z-10">
-                <div className="flex items-start justify-between mb-5">
-                    <div className="flex items-center gap-4">
-                        <div className={`p-3 rounded-2xl ${theme.iconBg} shadow-lg ${isToday ? 'animate-bounce shadow-blue-200' : ''}`}>
-                            <User className="w-5 h-5 text-white" />
+            <div className="p-4 flex flex-col h-full relative z-10">
+                <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-xl ${theme.iconBg} shadow-md ${isToday ? 'animate-bounce shadow-blue-200' : ''}`}>
+                            <User className="w-4 h-4 text-white" />
                         </div>
                         <div>
-                            <h3 className="font-heading font-black text-slate-800 text-lg line-clamp-1">{person.name || person.customer_name}</h3>
-                            <div className="flex items-center gap-2 mt-1">
-                                <Badge variant="secondary" className={`${theme.badge} border-none font-bold text-[10px] uppercase tracking-wider px-2 h-5`}>
-                                    {person.role || (person.relation ? 'Family Member' : 'Customer')}
+                            <h3 className="font-heading font-black text-slate-800 text-base line-clamp-1 leading-tight">{person.name || person.customer_name}</h3>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                                <Badge variant="secondary" className={`${theme.badge} border-none font-bold text-[9px] uppercase tracking-wider px-1.5 h-4`}>
+                                    {person.role || (person.relation ? 'Family' : 'Customer')}
                                 </Badge>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="mb-1">
-                    <div className="flex items-center gap-3 text-slate-600 bg-white/50 p-2 rounded-xl border border-white/50">
-                        <Calendar className={`w-4 h-4 ${theme.text}`} />
-                        <span className="text-sm font-bold">
-                            {new Date(person.dob).toLocaleDateString('en-IN', { day: 'numeric', month: 'long' })}
+                <div className="mb-1 space-y-1">
+                    <div className="flex items-center gap-2 text-slate-600 bg-white/50 p-1.5 rounded-lg border border-white/50">
+                        <Calendar className={`w-3.5 h-3.5 ${theme.text}`} />
+                        <span className="text-xs font-bold">
+                            {new Date(person.dob).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                         </span>
                     </div>
                     {person.mobile && (
-                        <div className="flex items-center gap-3 text-slate-600 p-2">
-                            <Phone className={`w-4 h-4 ${theme.text}`} />
-                            <span className="text-sm font-semibold">{person.mobile}</span>
+                        <div className="flex items-center gap-2 text-slate-600 px-1.5">
+                            <Phone className={`w-3.5 h-3.5 ${theme.text}`} />
+                            <span className="text-xs font-semibold">{person.mobile}</span>
                         </div>
                     )}
                     {person.customerName && (
-                        <div className="flex items-center gap-2 px-2 text-slate-400">
-                            <Users className="w-3.5 h-3.5" />
-                            <span className="text-[11px] font-medium leading-tight">Relation to: {person.customerName}</span>
+                        <div className="flex items-center gap-1.5 px-1.5 text-slate-400">
+                            <Users className="w-3 h-3" />
+                            <span className="text-[10px] font-medium leading-tight truncate">Rel: {person.customerName}</span>
                         </div>
                     )}
                 </div>
 
-                <div className="mt-auto flex flex-col gap-2">
+                <div className="mt-auto flex gap-2 pt-3">
                     <Button
                         size="sm"
                         variant="default"
-                        className={`w-full rounded-2xl text-xs h-10 font-black flex items-center justify-center gap-2 transition-all ${theme.iconBg
-                            } hover:opacity-90 shadow-md`}
+                        className={`flex-1 rounded-xl text-[10px] h-8 font-black flex items-center justify-center gap-1.5 transition-all ${theme.iconBg
+                            } hover:opacity-90 shadow-sm`}
                         asChild
                     >
                         <a href={`tel:${person.mobile}`}>
-                            <Phone className="w-3.5 h-3.5" /> CALL NOW
+                            <Phone className="w-3 h-3" /> CALL
                         </a>
                     </Button>
                     <Button
                         size="sm"
                         variant="outline"
-                        className="w-full rounded-2xl text-xs h-10 font-black border-slate-200 text-slate-700 flex items-center justify-center gap-2 hover:bg-slate-50 transition-all"
+                        className="flex-1 rounded-xl text-[10px] h-8 font-black border-slate-200 text-slate-700 flex items-center justify-center gap-1.5 hover:bg-slate-50 transition-all"
                         asChild
                     >
                         <a href={`https://wa.me/${person.mobile}?text=Happy Birthday ${person.name}!`} target="_blank" rel="noopener noreferrer">
-                            <MessageSquare className="w-3.5 h-3.5" /> WHATSAPP
+                            <MessageSquare className="w-3 h-3" /> CHAT
                         </a>
                     </Button>
                 </div>

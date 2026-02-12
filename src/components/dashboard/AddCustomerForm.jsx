@@ -662,15 +662,32 @@ export default function AddCustomerForm({ onSubmit, onCancel, isProcessing, init
                     {currentStep === 1 ? 'Cancel' : 'Back'}
                 </Button>
 
-                <Button
-                    type="button"
-                    onClick={handleNext}
-                    disabled={isProcessing}
-                    className="h-11 px-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center gap-2 transition-all shadow-lg shadow-blue-200 font-paragraph"
-                >
-                    {isProcessing ? 'Processing...' : (currentStep === 5 ? 'Submit Application' : 'Next Step')}
-                    {!isProcessing && currentStep < 5 && <ChevronRight className="w-4 h-4" />}
-                </Button>
+                <div className="flex items-center gap-3">
+                    {isEdit && currentStep < STEPS_COUNT && (
+                        <Button
+                            type="button"
+                            onClick={() => {
+                                if (validateStep(currentStep)) {
+                                    handleFinalSubmit();
+                                }
+                            }}
+                            disabled={isProcessing}
+                            className="hidden md:flex h-11 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold items-center gap-2 transition-all shadow-lg shadow-indigo-200 font-paragraph"
+                        >
+                            Update & Submit
+                        </Button>
+                    )}
+
+                    <Button
+                        type="button"
+                        onClick={handleNext}
+                        disabled={isProcessing}
+                        className="h-11 px-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center gap-2 transition-all shadow-lg shadow-blue-200 font-paragraph"
+                    >
+                        {isProcessing ? 'Processing...' : (currentStep === 5 ? 'Submit Application' : 'Next Step')}
+                        {!isProcessing && currentStep < 5 && <ChevronRight className="w-4 h-4" />}
+                    </Button>
+                </div>
             </footer>
         </div>
     );

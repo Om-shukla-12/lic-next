@@ -98,15 +98,15 @@ export const CustomerList = React.memo(({ customers, isLoading, onEdit, onDelete
                     <p className="text-sm text-muted-foreground">Try adjusting your search query</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3">
                     {filteredCustomers.map((customer) => (
                         <div
                             key={customer._id}
-                            className="bg-card rounded-lg md:rounded-xl shadow-premium border border-muted/20 p-3 md:p-4 transition-all hover:shadow-hover group"
+                            className="bg-card rounded-lg md:rounded-xl shadow-premium border border-muted/20 p-2.5 md:p-3 transition-all hover:shadow-hover group"
                         >
                             <div className="flex justify-between items-start mb-1.5 md:mb-2">
                                 <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 md:w-10 md:h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary overflow-hidden">
+                                    <div className="w-7 h-7 md:w-9 md:h-9 bg-primary/10 rounded-full flex items-center justify-center text-primary overflow-hidden">
                                         {customer.profile_picture && customer.profile_picture !== "string" ? (
                                             <img
                                                 src={customer.profile_picture}
@@ -115,11 +115,13 @@ export const CustomerList = React.memo(({ customers, isLoading, onEdit, onDelete
                                                 onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
                                             />
                                         ) : null}
-                                        <Users className={`w-4 h-4 md:w-5 md:h-5 text-primary ${customer.profile_picture && customer.profile_picture !== "string" ? 'hidden' : 'block'}`} />
+                                        <Users className={`w-3.5 h-3.5 md:w-4 md:h-4 text-primary ${customer.profile_picture && customer.profile_picture !== "string" ? 'hidden' : 'block'}`} />
                                     </div>
-                                    <div className="text-[7px] md:text-[9px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/30 px-1 py-0.5 rounded">
-                                        {customer.plan || 'No Plan'}
-                                    </div>
+                                    {customer.plan && customer.plan !== 'NA' && customer.plan !== 'N/A' && (
+                                        <div className="text-[7px] md:text-[9px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/30 px-1 py-0.5 rounded">
+                                            {customer.plan}
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="flex gap-1 md:gap-1.5 transition-opacity">
                                     <button
@@ -142,7 +144,7 @@ export const CustomerList = React.memo(({ customers, isLoading, onEdit, onDelete
                                 </div>
                             </div>
 
-                            <h3 className="font-heading text-sm md:text-base font-bold text-card-heading mb-0.5 truncate">
+                            <h3 className="font-heading text-xs md:text-sm font-bold text-card-heading mb-0.5 truncate">
                                 {customer.fullName}
                             </h3>
                             <div className="space-y-0.5 mb-2 md:mb-3">
